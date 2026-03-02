@@ -1,0 +1,33 @@
+/* Butterfly accent color override (fresh teal-blue) */
+:root{
+  --theme-color: #2BB3B1;
+}
+
+/* Links */
+a, #site-name, #site-title, #site-subtitle {
+  color: var(--theme-color);
+}
+a:hover {
+  filter: brightness(0.9);
+}
+
+/* Buttons (e.g., Follow Me, pagination, etc.) */
+button,
+.btn,
+#pagination .page-number.current,
+#pagination a:hover,
+#aside-content .card-info .card-info-social-icons i:hover {
+  background: var(--theme-color) !important;
+}
+
+/* Some components may use border color */
+.btn,
+#pagination a,
+#pagination .page-number {
+  border-color: var(--theme-color) !important;
+}
+
+/* Text selection */
+::selection{
+  background: rgba(43,179,177,0.25);
+}
