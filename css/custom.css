@@ -1,33 +1,26 @@
-/* Butterfly accent color override (fresh teal-blue) */
-:root{
-  --theme-color: #2BB3B1;
-}
+/* Fresh teal-blue */
+:root { --theme-color: #2BB3B1; }
 
-/* Links */
-a, #site-name, #site-title, #site-subtitle {
-  color: var(--theme-color);
-}
-a:hover {
-  filter: brightness(0.9);
-}
-
-/* Buttons (e.g., Follow Me, pagination, etc.) */
+/* Force override on main button styles */
+#aside-content .card-info .button,
+#aside-content .card-info .follow-button,
+#aside-content .card-info a.button,
+#aside-content .card-info .btn,
+.button--primary,
+.btn-primary,
+a.button,
+a.btn,
+button.btn,
 button,
-.btn,
-#pagination .page-number.current,
-#pagination a:hover,
-#aside-content .card-info .card-info-social-icons i:hover {
+.btn {
   background: var(--theme-color) !important;
-}
-
-/* Some components may use border color */
-.btn,
-#pagination a,
-#pagination .page-number {
   border-color: var(--theme-color) !important;
 }
 
-/* Text selection */
-::selection{
-  background: rgba(43,179,177,0.25);
-}
+/* Links */
+a { color: var(--theme-color) !important; }
+a:hover { filter: brightness(0.9); }
+
+/* Selection */
+::selection { background: rgba(43,179,177,0.25); }
+
