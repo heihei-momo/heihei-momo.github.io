@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>03fastlio2 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="1. Fast-LIO2 概述Fast-LIO2 是一种高效的激光-惯性里程计（LIO）方法，强调 紧耦合 与 实时性。它将 IMU 的高频运动信息与 LiDAR 的几何约束结合，通过 迭代卡尔曼滤波（Iterated Kalman Filter, IKF） 在每帧（或每个扫描）内多次线性化与更新，使得在快速运动、点云稠密、场景结构复杂时仍能保持稳定和高精度。 Fast-LIO2 的典型特征包括：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="03fastlio2">
+<meta property="og:url" content="https://heihei-momo.github.io/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:description" content="1. Fast-LIO2 概述Fast-LIO2 是一种高效的激光-惯性里程计（LIO）方法，强调 紧耦合 与 实时性。它将 IMU 的高频运动信息与 LiDAR 的几何约束结合，通过 迭代卡尔曼滤波（Iterated Kalman Filter, IKF） 在每帧（或每个扫描）内多次线性化与更新，使得在快速运动、点云稠密、场景结构复杂时仍能保持稳定和高精度。 Fast-LIO2 的典型特征包括：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-03-02T09:21:53.000Z">
+<meta property="article:modified_time" content="2026-03-03T07:28:09.666Z">
+<meta property="article:author" content="YinHao Ye">
+<meta property="article:tag" content="SLAM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "03fastlio2",
+  "url": "https://heihei-momo.github.io/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/",
+  "image": "https://heihei-momo.github.io/img/avatar.jpg",
+  "datePublished": "2026-03-02T09:21:53.000Z",
+  "dateModified": "2026-03-03T07:28:09.666Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "YinHao Ye",
+      "url": "https://heihei-momo.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '03fastlio2',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a><a class="nav-page-title" href="/"><span class="site-name">03fastlio2</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"></div></nav><div id="post-info"><h1 class="post-title">03fastlio2</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-03T07:28:09.666Z" title="更新于 2026-03-03 15:28:09">2026-03-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/">三维建图</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h3 id="1-Fast-LIO2-概述"><a href="#1-Fast-LIO2-概述" class="headerlink" title="1. Fast-LIO2 概述"></a>1. Fast-LIO2 概述</h3><p>Fast-LIO2 是一种高效的激光-惯性里程计（LIO）方法，强调 <strong>紧耦合</strong> 与 <strong>实时性</strong>。它将 IMU 的高频运动信息与 LiDAR 的几何约束结合，通过 <strong>迭代卡尔曼滤波（Iterated Kalman Filter, IKF）</strong> 在每帧（或每个扫描）内多次线性化与更新，使得在快速运动、点云稠密、场景结构复杂时仍能保持稳定和高精度。</p>
+<p>Fast-LIO2 的典型特征包括：</p>
+<ul>
+<li>以 <strong>滤波框架</strong> 为主线（而非传统“前端+后端图优化”）</li>
+<li>LiDAR 约束使用 <strong>点到平面（point-to-plane）</strong> 残差（ICP 风格）</li>
+<li>使用 <strong>局部地图（local map）</strong> 管理与高效近邻搜索（常见为 KD-tree）</li>
+<li>重点解决 LiDAR 扫描运动导致的 <strong>点云去畸变（deskew）</strong></li>
+<li>在更新中对非线性测量采用 <strong>迭代更新</strong> 提升收敛与鲁棒性</li>
+</ul>
+<hr>
+<h3 id="2-系统输入与输出"><a href="#2-系统输入与输出" class="headerlink" title="2. 系统输入与输出"></a>2. 系统输入与输出</h3><h4 id="2-1-输入"><a href="#2-1-输入" class="headerlink" title="2.1 输入"></a>2.1 输入</h4><ul>
+<li>IMU：角速度 <code>ω</code>、线加速度 <code>a</code>（高频）</li>
+<li>LiDAR：点云（较低频，但每帧点数多）</li>
+<li>可选：外参初值（LiDAR-IMU 相对位姿）、时间偏差等</li>
+</ul>
+<h4 id="2-2-输出"><a href="#2-2-输出" class="headerlink" title="2.2 输出"></a>2.2 输出</h4><ul>
+<li>里程计：位姿 <code>T_wb</code> 或 <code>T_wl</code>（世界到IMU&#x2F;雷达）</li>
+<li>速度、IMU bias</li>
+<li>可选：局部地图、去畸变点云、轨迹发布等</li>
+</ul>
+<hr>
+<h3 id="3-核心问题与解决思路"><a href="#3-核心问题与解决思路" class="headerlink" title="3. 核心问题与解决思路"></a>3. 核心问题与解决思路</h3><p>Fast-LIO2 主要解决以下工程痛点：</p>
+<ol>
+<li><p><strong>高速运动导致点云扭曲</strong><br>LiDAR 一帧扫描跨越一个时间窗口，机器人在扫描期间运动会造成点云“拉伸&#x2F;扭曲”。<br>Fast-LIO2 使用 IMU 在扫描时间内插值姿态与位置，对每个点进行时间对齐，实现去畸变。</p>
+</li>
+<li><p><strong>LiDAR-IMU 紧耦合估计</strong><br>使用滤波器将 IMU 预测与 LiDAR 几何测量统一在同一状态量中更新，避免松耦合带来的信息损失。</p>
+</li>
+<li><p><strong>非线性测量的线性化误差</strong><br>点到平面残差是强非线性的，Fast-LIO2 通过 IKF 在同一帧内多次迭代更新，缓解一次线性化不准确的问题。</p>
+</li>
+<li><p><strong>实时性与大点云处理</strong><br>局部地图与高效近邻检索减少计算负担，点云下采样与特征筛选进一步保证实时性能。</p>
+</li>
+</ol>
+<hr>
+<h3 id="4-状态量与误差模型"><a href="#4-状态量与误差模型" class="headerlink" title="4. 状态量与误差模型"></a>4. 状态量与误差模型</h3><p>Fast-LIO2 常用的状态（以 IMU 为主体坐标系 <code>b</code>）可写为：</p>
+<ul>
+<li>姿态：<code>R_wb</code>（或四元数 <code>q_wb</code>）</li>
+<li>位置：<code>p_wb</code></li>
+<li>速度：<code>v_wb</code></li>
+<li>IMU 偏置：<code>b_g</code>（陀螺 bias），<code>b_a</code>（加计 bias）</li>
+<li>重力向量：<code>g_w</code>（有些实现将重力方向&#x2F;大小作为状态或常量）</li>
+<li>外参：<code>T_bl</code>（IMU 到 LiDAR 的位姿），部分实现支持在线标定（可选）</li>
+</ul>
+<p>滤波一般在<strong>误差状态</strong>上工作（ESKF 思路）：</p>
+<ul>
+<li>小角度误差 <code>δθ</code></li>
+<li>位置误差 <code>δp</code></li>
+<li>速度误差 <code>δv</code></li>
+<li>偏置误差 <code>δb_g, δb_a</code></li>
+<li>（可选）外参误差</li>
+</ul>
+<hr>
+<h3 id="5-IMU-预测（Propagation）"><a href="#5-IMU-预测（Propagation）" class="headerlink" title="5. IMU 预测（Propagation）"></a>5. IMU 预测（Propagation）</h3><p>IMU 预测在两个 LiDAR 帧之间以高频积分：</p>
+<ol>
+<li>去偏置：</li>
+</ol>
+<ul>
+<li><code>ω_hat = ω - b_g</code></li>
+<li><code>a_hat = a - b_a</code></li>
+</ul>
+<ol start="2">
+<li>姿态更新：</li>
+</ol>
+<ul>
+<li><code>R_{k+1} = R_k * Exp(ω_hat * Δt)</code></li>
+</ul>
+<ol start="3">
+<li>加速度转到世界系并减重力：</li>
+</ol>
+<ul>
+<li><code>a_w = R_k * a_hat - g_w</code></li>
+</ul>
+<ol start="4">
+<li>速度与位置更新：</li>
+</ol>
+<ul>
+<li><code>v_{k+1} = v_k + a_w * Δt</code></li>
+<li><code>p_{k+1} = p_k + v_k * Δt + 0.5 * a_w * Δt^2</code></li>
+</ul>
+<p>同时传播协方差 <code>P</code>（使用线性化的系统矩阵 <code>F</code> 和噪声输入矩阵 <code>G</code>）。</p>
+<hr>
+<h3 id="6-点云去畸变（Deskew）"><a href="#6-点云去畸变（Deskew）" class="headerlink" title="6. 点云去畸变（Deskew）"></a>6. 点云去畸变（Deskew）</h3><p>LiDAR 每个点都有采样时间戳（或可由点的相对时间推算）。去畸变目标是把点统一变换到同一参考时刻（例如帧起始或帧结束）：</p>
+<ol>
+<li>在扫描时间窗口内利用 IMU 预测获得连续姿态&#x2F;位置（通常可插值）</li>
+<li>对每个点 <code>p_l(t_i)</code>，用该点时刻的传感器位姿 <code>T_wl(t_i)</code> 将其映射到统一参考时刻坐标系  </li>
+<li>输出去畸变点云用于后续匹配</li>
+</ol>
+<p>去畸变是 Fast-LIO2 能在高速运动下稳定工作的关键环节之一。</p>
+<hr>
+<h3 id="7-LiDAR-测量模型：点到平面残差"><a href="#7-LiDAR-测量模型：点到平面残差" class="headerlink" title="7. LiDAR 测量模型：点到平面残差"></a>7. LiDAR 测量模型：点到平面残差</h3><p>Fast-LIO2 的 LiDAR 约束通常来自局部地图中的平面结构：</p>
+<ol>
+<li>从去畸变点云中取点 <code>p</code>（在 LiDAR&#x2F;IMU 坐标系下）</li>
+<li>根据当前状态估计将点变换到世界系：<br><code>P = R_wb * (R_bl * p + t_bl) + p_wb</code></li>
+<li>在局部地图中搜索 <code>P</code> 的近邻点集</li>
+<li>用近邻点拟合局部平面（法向量 <code>n</code> 与平面上一点 <code>P0</code>）</li>
+<li>构造残差（点到平面距离）：<br><code>r = n^T (P - P0)</code></li>
+</ol>
+<p>对每个有效点都能得到一个残差，堆叠后形成测量方程。</p>
+<hr>
+<h3 id="8-迭代卡尔曼滤波（IKF）更新"><a href="#8-迭代卡尔曼滤波（IKF）更新" class="headerlink" title="8. 迭代卡尔曼滤波（IKF）更新"></a>8. 迭代卡尔曼滤波（IKF）更新</h3><p>点到平面残差是非线性的，Fast-LIO2 在同一帧内执行多次迭代：</p>
+<ol>
+<li>使用当前状态估计进行一次匹配与平面拟合，构建残差 <code>r(x)</code></li>
+<li>在当前线性化点计算雅可比 <code>H = ∂r/∂x</code></li>
+<li>使用卡尔曼更新得到增量 <code>δx</code></li>
+<li>用 <code>δx</code> 更新状态（姿态用 <code>Exp(δθ)</code> 方式更新）</li>
+<li>重复 1~4，直到：<ul>
+<li>迭代次数达到上限，或</li>
+<li>增量足够小 &#x2F; 残差收敛</li>
+</ul>
+</li>
+</ol>
+<p>迭代更新的效果是：</p>
+<ul>
+<li>更接近高斯-牛顿风格的迭代最小二乘</li>
+<li>对强非线性问题（尤其初值不够好时）更稳</li>
+<li>提升点云匹配收敛域与最终精度</li>
+</ul>
+<hr>
+<h3 id="构建全局地图"><a href="#构建全局地图" class="headerlink" title="构建全局地图"></a>构建全局地图</h3><h4 id="利用fast-lio2输出的关键帧直接累加，再进行体素滤波建的图"><a href="#利用fast-lio2输出的关键帧直接累加，再进行体素滤波建的图" class="headerlink" title="利用fast-lio2输出的关键帧直接累加，再进行体素滤波建的图"></a>利用fast-lio2输出的关键帧直接累加，再进行体素滤波建的图</h4><img src="https://heihei-momo.github.io/picx-images-hosting/20260303/image-20260114155528770.6t7nwr19n5.webp" alt="image-20260114155528770" style="zoom: 50%;" />
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io">YinHao Ye</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/">https://heihei-momo.github.io/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heihei-momo.github.io" target="_blank">MoMo</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/SLAM/">SLAM</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">03RS曲线和混合A*</div></div><div class="info-2"><div class="info-item-1">1.RS曲线1.1RS曲线介绍Reeds-Shepp 曲线（Reeds–Shepp Curve）是一种描述可前进和可后退，但转弯半径不变的的非完整约束车辆的最短路径，是对Dubins曲线的扩展，以下是曲线的示例。  rs曲线主要用于短距离连接两个姿态点（x，y，theta），一般用L表示左转，R表示右转，+表示向前，-表示向后，Cbeta，中的下标beta表示转过固定beta角度（曲线的圆心角），|表示车辆运动由正向变为反向，或是由反向变为正向，C表示左转L或者右转R，如果是CC连在一起，那么一定是R和L的切换。（因为如果不是，那就会退化，如La+Lb+&#x3D;La+b+，L+L-&#x3D;原地不动）据论文，为实现最优路径（路径最短），总共有五类路径族，分别是：   CSC CCC CCCC CCSC CCSCC    可以分为48种情况，后有两种被证明不可能为最优（L-R+L-，R-L+R-） RS曲线具有三种变换可以简化计算，分别是时间翻转，反射，向后变换  根据这三种变换，可以把48种路径简化为12种基路径 1.2RS曲线一般使用过程为了简化计算，一般会将曲线分为三步...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="02局部路径规划"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">02局部路径规划</div></div><div class="info-2"><div class="info-item-1">总览实现了一个 ROS nav_core::BaseLocalPlanner 插件形式的局部规划器 my_planner::MyPlanner。规划器接收上层给定的全局路径 global_plan_，在每个控制周期内根据机器人当前位姿选择一个临时目标点，并输出线速度与角速度 cmd_vel。规划器使用 PID 思路对横向偏差进行角速度控制，并对速度进行限幅。规划器同时读取局部代价地图（local costmap）进行禁行区域检测，当检测到前方路径点落在禁行区域时返回 false 触发重新全局规划。规划器在接近终点后进入终点姿态调整分支，完成最终角度对齐并置位 goal_reached_。  插件注册与控制参数插件通过 PLUGINLIB_EXPORT_CLASS 注册为 nav_core::BaseLocalPlanner： 1PLUGINLIB_EXPORT_CLASS(my_planner::MyPlanner, nav_core::BaseLocalPlanner)  该实现使用 PID 控制转向，参数为：  Kp = 4.5 Ki = 0.0 Kd = 0.5  PID ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/01cartographer%E3%80%81A-LOAM%E3%80%81LEGO-LOAM%E3%80%81LIO-SAM%E4%BB%8B%E7%BB%8D%E5%A4%8D%E7%8E%B0/" title="01cartographer、A-LOAM、LEGO-LOAM、LIO-SAM介绍复现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">01cartographer、A-LOAM、LEGO-LOAM、LIO-SAM介绍复现</div></div><div class="info-2"><div class="info-item-1">1.cartographer的配置gazebo仿真环境下运行cartographer建图  2.A-LOAM算法学习笔记LOAM因为被作者闭源，且代码晦涩，香港科技大学秦通博士使用Eigen和Ceres-Solver对原始LOAM代码进行了重构，在算法原理保持基本不变的情况下，对代码框架进行优化，简洁明了，也就是A-LOAM。 系统的节点图如下图所示，主要分为四个节点  &#x2F;kittiHelper节点，对应源码中的kittiHelper.cpp，该节点读取kitti odometry的数据集的数据，具体包括上图的5个topic其中点云话题&#x2F;velodyne_points 的作用最关键，是将原始激光雷达数据构造成的PCL点云数据（ROS格式）发布，其他四个topic只起到一个可视化的作用。 &#x2F;ascanRegistration节点，对应源码中的scanRegistration.cpp，主要是接收点云数据，然后去除噪点，计算扫描线，进行时间戳的校准等，将每个点云根据scanID放到对应的子点云，并将子点云合成一帧点云。 接下来就是对雷达数据的特征提取，首先...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/02IMU%E9%A2%84%E7%A7%AF%E5%88%86%E3%80%81%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96%E3%80%81%E5%9B%9E%E7%8E%AF%E6%A3%80%E6%B5%8B%E3%80%81%E7%BA%BF%E6%80%A7%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98/" title="02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘</div></div><div class="info-2"><div class="info-item-1">IMU预积分、位姿图优化、回环检测、线性和非线性最小二乘法。 </div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-Fast-LIO2-%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">1. Fast-LIO2 概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E7%B3%BB%E7%BB%9F%E8%BE%93%E5%85%A5%E4%B8%8E%E8%BE%93%E5%87%BA"><span class="toc-number">2.</span> <span class="toc-text">2. 系统输入与输出</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E8%BE%93%E5%85%A5"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 输入</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-%E8%BE%93%E5%87%BA"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 输出</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E6%A0%B8%E5%BF%83%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="toc-number">3.</span> <span class="toc-text">3. 核心问题与解决思路</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E7%8A%B6%E6%80%81%E9%87%8F%E4%B8%8E%E8%AF%AF%E5%B7%AE%E6%A8%A1%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">4. 状态量与误差模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-IMU-%E9%A2%84%E6%B5%8B%EF%BC%88Propagation%EF%BC%89"><span class="toc-number">5.</span> <span class="toc-text">5. IMU 预测（Propagation）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E7%82%B9%E4%BA%91%E5%8E%BB%E7%95%B8%E5%8F%98%EF%BC%88Deskew%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">6. 点云去畸变（Deskew）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-LiDAR-%E6%B5%8B%E9%87%8F%E6%A8%A1%E5%9E%8B%EF%BC%9A%E7%82%B9%E5%88%B0%E5%B9%B3%E9%9D%A2%E6%AE%8B%E5%B7%AE"><span class="toc-number">7.</span> <span class="toc-text">7. LiDAR 测量模型：点到平面残差</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-%E8%BF%AD%E4%BB%A3%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2%EF%BC%88IKF%EF%BC%89%E6%9B%B4%E6%96%B0"><span class="toc-number">8.</span> <span class="toc-text">8. 迭代卡尔曼滤波（IKF）更新</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E5%85%A8%E5%B1%80%E5%9C%B0%E5%9B%BE"><span class="toc-number">9.</span> <span class="toc-text">构建全局地图</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%A9%E7%94%A8fast-lio2%E8%BE%93%E5%87%BA%E7%9A%84%E5%85%B3%E9%94%AE%E5%B8%A7%E7%9B%B4%E6%8E%A5%E7%B4%AF%E5%8A%A0%EF%BC%8C%E5%86%8D%E8%BF%9B%E8%A1%8C%E4%BD%93%E7%B4%A0%E6%BB%A4%E6%B3%A2%E5%BB%BA%E7%9A%84%E5%9B%BE"><span class="toc-number">9.1.</span> <span class="toc-text">利用fast-lio2输出的关键帧直接累加，再进行体素滤波建的图</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/" title="03fastlio2">03fastlio2</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*">03RS曲线和混合A*</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/02IMU%E9%A2%84%E7%A7%AF%E5%88%86%E3%80%81%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96%E3%80%81%E5%9B%9E%E7%8E%AF%E6%A3%80%E6%B5%8B%E3%80%81%E7%BA%BF%E6%80%A7%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98/" title="02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘">02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/05STDC%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="05STDC语义分割">05STDC语义分割</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="02局部路径规划">02局部路径规划</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/index.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By YinHao Ye</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

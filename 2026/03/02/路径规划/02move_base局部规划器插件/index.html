@@ -1,0 +1,255 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>02局部路径规划 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="总览实现了一个 ROS nav_core::BaseLocalPlanner 插件形式的局部规划器 my_planner::MyPlanner。规划器接收上层给定的全局路径 global_plan_，在每个控制周期内根据机器人当前位姿选择一个临时目标点，并输出线速度与角速度 cmd_vel。规划器使用 PID 思路对横向偏差进行角速度控制，并对速度进行限幅。规划器同时读取局部代价地图（local">
+<meta property="og:type" content="article">
+<meta property="og:title" content="02局部路径规划">
+<meta property="og:url" content="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:description" content="总览实现了一个 ROS nav_core::BaseLocalPlanner 插件形式的局部规划器 my_planner::MyPlanner。规划器接收上层给定的全局路径 global_plan_，在每个控制周期内根据机器人当前位姿选择一个临时目标点，并输出线速度与角速度 cmd_vel。规划器使用 PID 思路对横向偏差进行角速度控制，并对速度进行限幅。规划器同时读取局部代价地图（local">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-03-02T09:21:52.000Z">
+<meta property="article:modified_time" content="2026-03-03T08:37:24.528Z">
+<meta property="article:author" content="YinHao Ye">
+<meta property="article:tag" content="局部路径规划">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "02局部路径规划",
+  "url": "https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/",
+  "image": "https://heihei-momo.github.io/img/avatar.jpg",
+  "datePublished": "2026-03-02T09:21:52.000Z",
+  "dateModified": "2026-03-03T08:37:24.528Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "YinHao Ye",
+      "url": "https://heihei-momo.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '02局部路径规划',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a><a class="nav-page-title" href="/"><span class="site-name">02局部路径规划</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"></div></nav><div id="post-info"><h1 class="post-title">02局部路径规划</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-03T08:37:24.528Z" title="更新于 2026-03-03 16:37:24">2026-03-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">路径规划</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p>实现了一个 ROS <code>nav_core::BaseLocalPlanner</code> 插件形式的局部规划器 <code>my_planner::MyPlanner</code>。规划器接收上层给定的全局路径 <code>global_plan_</code>，在每个控制周期内根据机器人当前位姿选择一个临时目标点，并输出线速度与角速度 <code>cmd_vel</code>。规划器使用 PID 思路对横向偏差进行角速度控制，并对速度进行限幅。规划器同时读取局部代价地图（local costmap）进行禁行区域检测，当检测到前方路径点落在禁行区域时返回 <code>false</code> 触发重新全局规划。规划器在接近终点后进入终点姿态调整分支，完成最终角度对齐并置位 <code>goal_reached_</code>。</p>
+<hr>
+<h2 id="插件注册与控制参数"><a href="#插件注册与控制参数" class="headerlink" title="插件注册与控制参数"></a>插件注册与控制参数</h2><p>插件通过 <code>PLUGINLIB_EXPORT_CLASS</code> 注册为 <code>nav_core::BaseLocalPlanner</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">PLUGINLIB_EXPORT_CLASS</span>(my_planner::MyPlanner, nav_core::BaseLocalPlanner)</span><br></pre></td></tr></table></figure>
+
+<p>该实现使用 PID 控制转向，参数为：</p>
+<ul>
+<li><code>Kp = 4.5</code></li>
+<li><code>Ki = 0.0</code></li>
+<li><code>Kd = 0.5</code></li>
+</ul>
+<p>PID 状态变量包括：</p>
+<ul>
+<li><code>angular_error</code>：当前横向误差</li>
+<li><code>last_error</code>：上一周期误差</li>
+<li><code>error_sum</code>：误差累计（积分项）</li>
+<li><code>error_diff</code>：误差变化（微分项）</li>
+<li><code>output</code>：PID 输出，用作角速度</li>
+</ul>
+<hr>
+<h2 id="局部代价地图读取与可视化"><a href="#局部代价地图读取与可视化" class="headerlink" title="局部代价地图读取与可视化"></a>局部代价地图读取与可视化</h2><h3 id="1-读取-local-costmap"><a href="#1-读取-local-costmap" class="headerlink" title="1) 读取 local costmap"></a>1) 读取 local costmap</h3><p>规划器从 <code>costmap_ros_</code> 取得局部代价地图：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">costmap_2d::Costmap2D* costmap = costmap_ros_-&gt;<span class="built_in">getCostmap</span>();</span><br><span class="line"><span class="type">unsigned</span> <span class="type">char</span>* map_data = costmap-&gt;<span class="built_in">getCharMap</span>();</span><br><span class="line"><span class="type">unsigned</span> <span class="type">int</span> size_x = costmap-&gt;<span class="built_in">getSizeInCellsX</span>();</span><br><span class="line"><span class="type">unsigned</span> <span class="type">int</span> size_y = costmap-&gt;<span class="built_in">getSizeInCellsY</span>();</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>getCharMap()</code> 返回栅格代价值的一维数组</li>
+<li><code>size_x/size_y</code> 为栅格宽高（列&#x2F;行）</li>
+</ul>
+<h3 id="2-生成-OpenCV-图像用于调试显示"><a href="#2-生成-OpenCV-图像用于调试显示" class="headerlink" title="2) 生成 OpenCV 图像用于调试显示"></a>2) 生成 OpenCV 图像用于调试显示</h3><p>代码构建一张 <code>CV_8UC3</code> 图像，并根据代价值上色：</p>
+<ul>
+<li><code>cost == 0</code>：可通行区域（灰色）</li>
+<li><code>cost == 254</code>：障碍（黑色）</li>
+<li><code>cost == 253</code>：禁行区域（黄色）</li>
+<li>其他代价：红蓝渐变显示（越大越红）</li>
+</ul>
+<p>该显示属于调试用途，用于直观看到局部地图的障碍与代价分布。</p>
+<h3 id="3-翻转图像坐标以匹配显示习惯"><a href="#3-翻转图像坐标以匹配显示习惯" class="headerlink" title="3) 翻转图像坐标以匹配显示习惯"></a>3) 翻转图像坐标以匹配显示习惯</h3><p>代码对图像进行翻转，将 costmap 的索引方向映射到更直观的显示方向，然后进行放大显示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cv::<span class="built_in">resize</span>(map_image, map_image, cv::<span class="built_in">Size</span>(size_y*<span class="number">5</span>, size_x*<span class="number">5</span>), <span class="number">0</span>, <span class="number">0</span>, cv::INTER_NEAREST);</span><br><span class="line">cv::<span class="built_in">imshow</span>(<span class="string">&quot;Map&quot;</span>, map_image);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="全局路径点绘制与禁行区检测"><a href="#全局路径点绘制与禁行区检测" class="headerlink" title="全局路径点绘制与禁行区检测"></a>全局路径点绘制与禁行区检测</h2><h3 id="1-将全局路径点转换到-odom（局部地图坐标系）"><a href="#1-将全局路径点转换到-odom（局部地图坐标系）" class="headerlink" title="1) 将全局路径点转换到 odom（局部地图坐标系）"></a>1) 将全局路径点转换到 odom（局部地图坐标系）</h3><p>局部代价地图通常以 <code>odom</code> 为 <code>global_frame</code>。代码将全局路径点转换到 <code>odom</code> 坐标系，并投到局部 costmap 栅格坐标中显示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tf_listener_-&gt;<span class="built_in">transformPose</span>(<span class="string">&quot;odom&quot;</span>, global_plan_[i], pose_odom);</span><br><span class="line"><span class="type">double</span> local_x = pose_odom.pose.position.x - origin_x;</span><br><span class="line"><span class="type">double</span> local_y = pose_odom.pose.position.y - origin_y;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> x = local_x / costmap-&gt;<span class="built_in">getResolution</span>();</span><br><span class="line"><span class="type">int</span> y = local_y / costmap-&gt;<span class="built_in">getResolution</span>();</span><br><span class="line">cv::<span class="built_in">circle</span>(map_image, cv::<span class="built_in">Point</span>(x,y), <span class="number">0</span>, cv::<span class="built_in">Scalar</span>(<span class="number">255</span>,<span class="number">0</span>,<span class="number">255</span>)); <span class="comment">// 紫色路径点</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="2-对前方一段路径做禁行区探测"><a href="#2-对前方一段路径做禁行区探测" class="headerlink" title="2) 对前方一段路径做禁行区探测"></a>2) 对前方一段路径做禁行区探测</h3><p>代码对 <code>target_index_</code> 起始的后续 10 个路径点做检测。若对应栅格代价值 <code>&gt;= 253</code>，函数直接返回 <code>false</code>，触发上层重新规划全局路径：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ((i&gt;=target_index_) &amp;&amp; (i&lt;target_index_<span class="number">+10</span>)) &#123;</span><br><span class="line">    <span class="type">int</span> map_index = y*size_x + x;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> cost = map_data[map_index];</span><br><span class="line">    <span class="keyword">if</span> (cost &gt;= <span class="number">253</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该策略属于“前方安全检查”。该策略以路径点落入禁行&#x2F;障碍区域作为快速失败条件，避免机器人继续沿不可行路径运动。</p>
+<hr>
+<h2 id="终点阶段处理：终点姿态对齐"><a href="#终点阶段处理：终点姿态对齐" class="headerlink" title="终点阶段处理：终点姿态对齐"></a>终点阶段处理：终点姿态对齐</h2><p>代码对终点采用“距离触发 + 姿态闭环”的分支处理：</p>
+<ol>
+<li>将全局路径终点转换到 <code>base_link</code> 坐标系</li>
+<li>当终点距离小于阈值（代码中为 <code>0.1m</code>）时进入姿态调整模式 <code>pose_adjusting_ = true</code></li>
+<li>在姿态调整模式下，输出速度直接基于终点相对位姿：<ul>
+<li>线速度与 <code>x</code> 成比例</li>
+<li>角速度与 <code>final_yaw</code> 成比例</li>
+</ul>
+</li>
+<li>当 <code>abs(final_yaw) &lt; 0.1</code> 时认为到达终点并置位 <code>goal_reached_</code></li>
+</ol>
+<p>关键代码路径如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">tf_listener_-&gt;<span class="built_in">transformPose</span>(<span class="string">&quot;base_link&quot;</span>, global_plan_[final_index], pose_final);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (!pose_adjusting_) &#123;</span><br><span class="line">    <span class="type">double</span> dist = <span class="built_in">sqrt</span>(dx*dx + dy*dy);</span><br><span class="line">    <span class="keyword">if</span> (dist &lt; <span class="number">0.1</span>) pose_adjusting_ = <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (pose_adjusting_) &#123;</span><br><span class="line">    <span class="type">double</span> final_yaw = tf::<span class="built_in">getYaw</span>(pose_final.pose.orientation);</span><br><span class="line">    cmd_vel.linear.x  = pose_final.pose.position.x * <span class="number">1.5</span>;</span><br><span class="line">    cmd_vel.angular.z = final_yaw * <span class="number">0.9</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">abs</span>(final_yaw) &lt; <span class="number">0.1</span>) &#123;</span><br><span class="line">        goal_reached_ = <span class="literal">true</span>;</span><br><span class="line">        cmd_vel.linear.x = <span class="number">0</span>;</span><br><span class="line">        cmd_vel.angular.z = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该实现将“位置跟踪”和“末端角度对齐”分离，避免在终点附近因路径点稀疏或目标点选择导致的姿态无法收敛问题。</p>
+<hr>
+<h2 id="路径跟踪阶段：前瞻目标点选择"><a href="#路径跟踪阶段：前瞻目标点选择" class="headerlink" title="路径跟踪阶段：前瞻目标点选择"></a>路径跟踪阶段：前瞻目标点选择</h2><p>规划器在 <code>base_link</code> 坐标系下遍历全局路径点，从 <code>target_index_</code> 开始寻找距离大于阈值的点作为临时目标点。代码中阈值为 <code>0.2m</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = target_index_; i &lt; global_plan_.<span class="built_in">size</span>(); i++) &#123;</span><br><span class="line">    tf_listener_-&gt;<span class="built_in">transformPose</span>(<span class="string">&quot;base_link&quot;</span>, global_plan_[i], pose_base);</span><br><span class="line">    <span class="type">double</span> dist = <span class="built_in">sqrt</span>(dx*dx + dy*dy);</span><br><span class="line">    <span class="keyword">if</span> (dist &gt; <span class="number">0.2</span>) &#123;</span><br><span class="line">        target_pose = pose_base;</span><br><span class="line">        target_index_ = i;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (i == global_plan_.<span class="built_in">size</span>()<span class="number">-1</span>) target_pose = pose_base;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该策略属于“短前瞻”选点方式。临时目标点始终位于机器人前方一定距离，能降低控制抖动并提升跟踪稳定性。</p>
+<hr>
+<h2 id="速度控制：线速度比例-角速度-PID"><a href="#速度控制：线速度比例-角速度-PID" class="headerlink" title="速度控制：线速度比例 + 角速度 PID"></a>速度控制：线速度比例 + 角速度 PID</h2><h3 id="1-线速度控制"><a href="#1-线速度控制" class="headerlink" title="1) 线速度控制"></a>1) 线速度控制</h3><p>线速度与目标点在 <code>base_link</code> 下的前向距离 <code>x</code> 成比例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmd_vel.linear.x = target_pose.pose.position.x * <span class="number">1.5</span>;</span><br></pre></td></tr></table></figure>
+
+<p>该设计使得机器人离目标点更远时速度更大，接近时速度更小。</p>
+<h3 id="2-角速度控制（PID）"><a href="#2-角速度控制（PID）" class="headerlink" title="2) 角速度控制（PID）"></a>2) 角速度控制（PID）</h3><p>横向误差取目标点在 <code>base_link</code> 下的 <code>y</code> 值：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">angular_error = target_pose.pose.position.y;</span><br><span class="line">error_sum += angular_error;</span><br><span class="line">error_diff = angular_error - last_error;</span><br><span class="line">output = Kp*angular_error + Ki*error_sum + Kd*error_diff;</span><br><span class="line">cmd_vel.angular.z = output;</span><br><span class="line">last_error = angular_error;</span><br></pre></td></tr></table></figure>
+
+<p>该控制等价于让机器人把目标点“拉回到车体正前方”（使 <code>y -&gt; 0</code>），横向偏差越大转向越大。</p>
+<hr>
+<h2 id="速度限幅"><a href="#速度限幅" class="headerlink" title="速度限幅"></a>速度限幅</h2><p>代码对线速度与角速度进行硬限幅：</p>
+<ul>
+<li>线速度限制在 <code>[-0.2, 0.2]</code></li>
+<li>角速度限制在 <code>[-0.5, 0.5]</code></li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (cmd_vel.linear.x &gt;= <span class="number">0.2</span>) cmd_vel.linear.x = <span class="number">0.2</span>;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (cmd_vel.linear.x &lt;= <span class="number">-0.2</span>) cmd_vel.linear.x = <span class="number">-0.2</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (cmd_vel.angular.z &gt;= <span class="number">0.5</span>) cmd_vel.angular.z = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (cmd_vel.angular.z &lt;= <span class="number">-0.5</span>) cmd_vel.angular.z = <span class="number">-0.5</span>;</span><br></pre></td></tr></table></figure>
+
+<p>该限制保护底盘执行器并提升控制稳定性。</p>
+<hr>
+<h2 id="辅助可视化：路径在-base-link-坐标系下的分布"><a href="#辅助可视化：路径在-base-link-坐标系下的分布" class="headerlink" title="辅助可视化：路径在 base_link 坐标系下的分布"></a>辅助可视化：路径在 base_link 坐标系下的分布</h2><p>代码额外构建 <code>plan_image</code>，将路径点转换到 <code>base_link</code> 并绘制在 600×600 图像上，中心点表示机器人位置。该图用于观察路径相对机器人朝向的分布，便于调参 PID 与前瞻阈值。</p>
+<hr>
+<h2 id="关键流程简图"><a href="#关键流程简图" class="headerlink" title="关键流程简图"></a>关键流程简图</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">输入：global_plan_（世界坐标系路径） + local costmap</span><br><span class="line">        |</span><br><span class="line">读取 costmap 并可视化（OpenCV）</span><br><span class="line">        |</span><br><span class="line">将路径点转换到 odom 并检查前方禁行区（cost&gt;=253 -&gt; return false）</span><br><span class="line">        |</span><br><span class="line">终点处理：距离&lt;0.1m 进入姿态对齐（按 final_yaw 闭环）</span><br><span class="line">        |</span><br><span class="line">路径跟踪：从 target_index_ 向后找 dist&gt;0.2m 的临时目标点（base_link）</span><br><span class="line">        |</span><br><span class="line">速度输出：</span><br><span class="line">  v = 1.5 * target_x（再限幅）</span><br><span class="line">  w = PID(target_y)（再限幅）</span><br><span class="line">        |</span><br><span class="line">输出 cmd_vel</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="最终效果（左上角紫色为局部路径）"><a href="#最终效果（左上角紫色为局部路径）" class="headerlink" title="最终效果（左上角紫色为局部路径）"></a>最终效果（左上角紫色为局部路径）</h2><img src="https://heihei-momo.github.io/picx-images-hosting/20260303/规划.83al2tnf18.webp" alt="规划" style="zoom:50%;" />
+
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io">YinHao Ye</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/">https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heihei-momo.github.io" target="_blank">MoMo</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">局部路径规划</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/" title="03fastlio2"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">03fastlio2</div></div><div class="info-2"><div class="info-item-1">1. Fast-LIO2 概述Fast-LIO2 是一种高效的激光-惯性里程计（LIO）方法，强调 紧耦合 与 实时性。它将 IMU 的高频运动信息与 LiDAR 的几何约束结合，通过 迭代卡尔曼滤波（Iterated Kalman Filter, IKF） 在每帧（或每个扫描）内多次线性化与更新，使得在快速运动、点云稠密、场景结构复杂时仍能保持稳定和高精度。 Fast-LIO2 的典型特征包括：  以 滤波框架 为主线（而非传统“前端+后端图优化”） LiDAR 约束使用 点到平面（point-to-plane） 残差（ICP 风格） 使用 局部地图（local map） 管理与高效近邻搜索（常见为 KD-tree） 重点解决 LiDAR 扫描运动导致的 点云去畸变（deskew） 在更新中对非线性测量采用 迭代更新 提升收敛与鲁棒性   2. 系统输入与输出2.1 输入 IMU：角速度 ω、线加速度 a（高频） LiDAR：点云（较低频，但每帧点数多） 可选：外参初值（LiDAR-IMU 相对位姿）、时间偏差等  2.2 输出 里程计：位姿 T_wb 或 T_wl（世界到IM...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/05STDC%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="05STDC语义分割"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">05STDC语义分割</div></div><div class="info-2"><div class="info-item-1">STDC 在语义分割中通常指 STDCNet 这类轻量 Backbone 及其配套的实时分割框架。它的定位更偏向“高效特征提取网络（backbone）”，用于替换 ResNet 等较重的主干，从而在保持分割精度的同时显著提升推理速度，适合实时场景（自动驾驶、机器人、移动端）。   语义分割需求与 STDC 的设计目标语义分割需要同时满足：  低层：边界、细线条、小结构的空间细节 高层：场景语义、上下文与类别判别能力 工程：吞吐量高、延迟低、算子友好（便于部署）  STDCNet 的设计目标是用更“计算友好”的方式获得多尺度特征，并将不同层级的特征高效融合，满足实时语义分割对速度的要求。  STDC 的核心结构思想：Short-Term Dense ConcatenateSTDC 的核心思路可以用一句工程化描述概括：  将一次复杂卷积的表达能力拆成多段较轻的卷积序列，并把中间特征进行“短程密集拼接”，在可控计算量下提升特征表达与梯度传递。  这里的“Short-Term”强调拼接发生在一个局部块内部或相邻层级范围内，而不是像 DenseNet 那样跨很长范围全连接式拼接。这样能在不...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">总览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%92%E4%BB%B6%E6%B3%A8%E5%86%8C%E4%B8%8E%E6%8E%A7%E5%88%B6%E5%8F%82%E6%95%B0"><span class="toc-number">2.</span> <span class="toc-text">插件注册与控制参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B1%80%E9%83%A8%E4%BB%A3%E4%BB%B7%E5%9C%B0%E5%9B%BE%E8%AF%BB%E5%8F%96%E4%B8%8E%E5%8F%AF%E8%A7%86%E5%8C%96"><span class="toc-number">3.</span> <span class="toc-text">局部代价地图读取与可视化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E8%AF%BB%E5%8F%96-local-costmap"><span class="toc-number">3.1.</span> <span class="toc-text">1) 读取 local costmap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E7%94%9F%E6%88%90-OpenCV-%E5%9B%BE%E5%83%8F%E7%94%A8%E4%BA%8E%E8%B0%83%E8%AF%95%E6%98%BE%E7%A4%BA"><span class="toc-number">3.2.</span> <span class="toc-text">2) 生成 OpenCV 图像用于调试显示</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E7%BF%BB%E8%BD%AC%E5%9B%BE%E5%83%8F%E5%9D%90%E6%A0%87%E4%BB%A5%E5%8C%B9%E9%85%8D%E6%98%BE%E7%A4%BA%E4%B9%A0%E6%83%AF"><span class="toc-number">3.3.</span> <span class="toc-text">3) 翻转图像坐标以匹配显示习惯</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E7%82%B9%E7%BB%98%E5%88%B6%E4%B8%8E%E7%A6%81%E8%A1%8C%E5%8C%BA%E6%A3%80%E6%B5%8B"><span class="toc-number">4.</span> <span class="toc-text">全局路径点绘制与禁行区检测</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%B0%86%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E7%82%B9%E8%BD%AC%E6%8D%A2%E5%88%B0-odom%EF%BC%88%E5%B1%80%E9%83%A8%E5%9C%B0%E5%9B%BE%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%89"><span class="toc-number">4.1.</span> <span class="toc-text">1) 将全局路径点转换到 odom（局部地图坐标系）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%AF%B9%E5%89%8D%E6%96%B9%E4%B8%80%E6%AE%B5%E8%B7%AF%E5%BE%84%E5%81%9A%E7%A6%81%E8%A1%8C%E5%8C%BA%E6%8E%A2%E6%B5%8B"><span class="toc-number">4.2.</span> <span class="toc-text">2) 对前方一段路径做禁行区探测</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%88%E7%82%B9%E9%98%B6%E6%AE%B5%E5%A4%84%E7%90%86%EF%BC%9A%E7%BB%88%E7%82%B9%E5%A7%BF%E6%80%81%E5%AF%B9%E9%BD%90"><span class="toc-number">5.</span> <span class="toc-text">终点阶段处理：终点姿态对齐</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA%E9%98%B6%E6%AE%B5%EF%BC%9A%E5%89%8D%E7%9E%BB%E7%9B%AE%E6%A0%87%E7%82%B9%E9%80%89%E6%8B%A9"><span class="toc-number">6.</span> <span class="toc-text">路径跟踪阶段：前瞻目标点选择</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%EF%BC%9A%E7%BA%BF%E9%80%9F%E5%BA%A6%E6%AF%94%E4%BE%8B-%E8%A7%92%E9%80%9F%E5%BA%A6-PID"><span class="toc-number">7.</span> <span class="toc-text">速度控制：线速度比例 + 角速度 PID</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E7%BA%BF%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6"><span class="toc-number">7.1.</span> <span class="toc-text">1) 线速度控制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E8%A7%92%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6%EF%BC%88PID%EF%BC%89"><span class="toc-number">7.2.</span> <span class="toc-text">2) 角速度控制（PID）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9F%E5%BA%A6%E9%99%90%E5%B9%85"><span class="toc-number">8.</span> <span class="toc-text">速度限幅</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BE%85%E5%8A%A9%E5%8F%AF%E8%A7%86%E5%8C%96%EF%BC%9A%E8%B7%AF%E5%BE%84%E5%9C%A8-base-link-%E5%9D%90%E6%A0%87%E7%B3%BB%E4%B8%8B%E7%9A%84%E5%88%86%E5%B8%83"><span class="toc-number">9.</span> <span class="toc-text">辅助可视化：路径在 base_link 坐标系下的分布</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%B5%81%E7%A8%8B%E7%AE%80%E5%9B%BE"><span class="toc-number">10.</span> <span class="toc-text">关键流程简图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E6%95%88%E6%9E%9C%EF%BC%88%E5%B7%A6%E4%B8%8A%E8%A7%92%E7%B4%AB%E8%89%B2%E4%B8%BA%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%EF%BC%89"><span class="toc-number">11.</span> <span class="toc-text">最终效果（左上角紫色为局部路径）</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/" title="03fastlio2">03fastlio2</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*">03RS曲线和混合A*</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/02IMU%E9%A2%84%E7%A7%AF%E5%88%86%E3%80%81%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96%E3%80%81%E5%9B%9E%E7%8E%AF%E6%A3%80%E6%B5%8B%E3%80%81%E7%BA%BF%E6%80%A7%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98/" title="02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘">02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/05STDC%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="05STDC语义分割">05STDC语义分割</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="02局部路径规划">02局部路径规划</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/index.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By YinHao Ye</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

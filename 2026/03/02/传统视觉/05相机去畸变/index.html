@@ -1,0 +1,285 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>05相机去畸变 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="总览第一部分完成相机标定流程，流程覆盖图像预处理、棋盘格角点检测、多尺度策略、亚像素级精确化、标定求解、重投影误差评估、参数保存与去畸变验证。第二部分实现手写去畸变流程，流程使用标定得到的内参和畸变系数，在像素级进行畸变模型反算，并用最近邻插值生成去畸变图像。  第一部分：标定过程（ROS + OpenCV）1. 程序入口与参数来源程序以 ROS 节点形式运行，节点名为 camera_calibr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="05相机去畸变">
+<meta property="og:url" content="https://heihei-momo.github.io/2026/03/02/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/05%E7%9B%B8%E6%9C%BA%E5%8E%BB%E7%95%B8%E5%8F%98/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:description" content="总览第一部分完成相机标定流程，流程覆盖图像预处理、棋盘格角点检测、多尺度策略、亚像素级精确化、标定求解、重投影误差评估、参数保存与去畸变验证。第二部分实现手写去畸变流程，流程使用标定得到的内参和畸变系数，在像素级进行畸变模型反算，并用最近邻插值生成去畸变图像。  第一部分：标定过程（ROS + OpenCV）1. 程序入口与参数来源程序以 ROS 节点形式运行，节点名为 camera_calibr">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-03-02T09:21:50.000Z">
+<meta property="article:modified_time" content="2026-03-03T02:05:20.904Z">
+<meta property="article:author" content="YinHao Ye">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "05相机去畸变",
+  "url": "https://heihei-momo.github.io/2026/03/02/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/05%E7%9B%B8%E6%9C%BA%E5%8E%BB%E7%95%B8%E5%8F%98/",
+  "image": "https://heihei-momo.github.io/img/avatar.jpg",
+  "datePublished": "2026-03-02T09:21:50.000Z",
+  "dateModified": "2026-03-03T02:05:20.904Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "YinHao Ye",
+      "url": "https://heihei-momo.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/2026/03/02/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/05%E7%9B%B8%E6%9C%BA%E5%8E%BB%E7%95%B8%E5%8F%98/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '05相机去畸变',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a><a class="nav-page-title" href="/"><span class="site-name">05相机去畸变</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"></div></nav><div id="post-info"><h1 class="post-title">05相机去畸变</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-02T09:21:50.000Z" title="发表于 2026-03-02 17:21:50">2026-03-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-03T02:05:20.904Z" title="更新于 2026-03-03 10:05:20">2026-03-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/">传统视觉</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p>第一部分完成相机标定流程，流程覆盖图像预处理、棋盘格角点检测、多尺度策略、亚像素级精确化、标定求解、重投影误差评估、参数保存与去畸变验证。第二部分实现手写去畸变流程，流程使用标定得到的内参和畸变系数，在像素级进行畸变模型反算，并用最近邻插值生成去畸变图像。</p>
+<hr>
+<h1 id="第一部分：标定过程（ROS-OpenCV）"><a href="#第一部分：标定过程（ROS-OpenCV）" class="headerlink" title="第一部分：标定过程（ROS + OpenCV）"></a>第一部分：标定过程（ROS + OpenCV）</h1><h2 id="1-程序入口与参数来源"><a href="#1-程序入口与参数来源" class="headerlink" title="1. 程序入口与参数来源"></a>1. 程序入口与参数来源</h2><p>程序以 ROS 节点形式运行，节点名为 <code>camera_calibration_node</code>。程序从 ROS 参数服务器读取核心参数，并提供默认值：</p>
+<ul>
+<li><code>image_dir</code>：标定图像目录</li>
+<li><code>board_width / board_height</code>：棋盘格内角点数量（列数&#x2F;行数）</li>
+<li><code>square_size</code>：棋盘格单元边长（米）</li>
+</ul>
+<p>程序使用 <code>boost::filesystem</code> 检查目录存在性并遍历目录文件，然后按文件名排序，保证处理顺序稳定。</p>
+<hr>
+<h2 id="2-世界坐标系角点构建"><a href="#2-世界坐标系角点构建" class="headerlink" title="2. 世界坐标系角点构建"></a>2. 世界坐标系角点构建</h2><p>程序预先构造棋盘格在世界坐标系下的三维点 <code>object_points</code>。棋盘格被放置在 <code>Z=0</code> 平面上，点按行列展开，单位为 <code>square_size</code>：</p>
+<ul>
+<li><code>X = j * square_size</code></li>
+<li><code>Y = i * square_size</code></li>
+<li><code>Z = 0</code></li>
+</ul>
+<p>程序将该模板在每张成功检测的图像上重复使用，并加入 <code>object_points_vec</code>。</p>
+<hr>
+<h2 id="3-图像预处理与低对比度增强"><a href="#3-图像预处理与低对比度增强" class="headerlink" title="3. 图像预处理与低对比度增强"></a>3. 图像预处理与低对比度增强</h2><p>程序对输入图像进行统一预处理，处理函数 <code>handleLowContrast()</code> 走通用路径：</p>
+<ol>
+<li>将彩色图转换为灰度图</li>
+<li>使用 CLAHE 进行自适应直方图均衡化</li>
+<li>输出增强后的灰度图用于角点检测</li>
+</ol>
+<p>CLAHE 的裁剪限制 <code>clipLimit</code> 设置为 <code>2.0</code>，该设置提高局部对比度并抑制过度增强的噪声。</p>
+<hr>
+<h2 id="4-多尺度检测策略"><a href="#4-多尺度检测策略" class="headerlink" title="4. 多尺度检测策略"></a>4. 多尺度检测策略</h2><p>程序根据图像最大边长对输入图进行缩放，控制角点检测在合适的尺度上运行：</p>
+<ul>
+<li>当图像过大时执行降采样，降低计算开销</li>
+<li>当图像过小时执行上采样，提高角点显著性</li>
+<li>当图像处于合理区间时保持原始尺度</li>
+</ul>
+<p>缩放因子 <code>scale_factor</code> 被记录，用于后续将检测到的角点坐标映射回原始分辨率。</p>
+<hr>
+<h2 id="5-棋盘格角点检测的多策略组合"><a href="#5-棋盘格角点检测的多策略组合" class="headerlink" title="5. 棋盘格角点检测的多策略组合"></a>5. 棋盘格角点检测的多策略组合</h2><p>程序使用 <code>cv::findChessboardCorners()</code> 执行角点检测，并组合不同标志位以提升鲁棒性：</p>
+<ul>
+<li><code>CALIB_CB_ADAPTIVE_THRESH</code>：自适应阈值增强边缘对比</li>
+<li><code>CALIB_CB_FAST_CHECK</code>：快速预检查提升速度</li>
+<li><code>CALIB_CB_NORMALIZE_IMAGE</code>：归一化输入图像改善检测稳定性</li>
+</ul>
+<p>当第一次检测失败时，程序执行备用策略：</p>
+<ol>
+<li>对图像做 <code>GaussianBlur</code> 降噪与平滑</li>
+<li>使用较少标志位再次尝试</li>
+<li>最后尝试更简化的检测标志组合</li>
+</ol>
+<p>该多策略路径提升了弱纹理、曝光不均、噪声更强场景下的成功率。</p>
+<hr>
+<h2 id="6-亚像素级角点精确化与坐标回映射"><a href="#6-亚像素级角点精确化与坐标回映射" class="headerlink" title="6. 亚像素级角点精确化与坐标回映射"></a>6. 亚像素级角点精确化与坐标回映射</h2><p>检测到角点后，程序使用 <code>cv::cornerSubPix()</code> 提升角点精度。程序使用较严格的终止条件与更大的搜索窗口：</p>
+<ul>
+<li>终止条件：最多 50 次迭代或误差小于 0.001</li>
+<li>搜索窗口：<code>(15,15)</code> 与最终 <code>(21,21)</code> 两阶段细化</li>
+</ul>
+<p>当检测图像执行过缩放时，程序将角点坐标按 <code>1/scale_factor</code> 映射回原始图像坐标，再在原始尺度上进行最终亚像素优化。</p>
+<hr>
+<h2 id="7-标定求解与畸变模型约束"><a href="#7-标定求解与畸变模型约束" class="headerlink" title="7. 标定求解与畸变模型约束"></a>7. 标定求解与畸变模型约束</h2><p>程序调用 <code>cv::calibrateCamera()</code> 求解相机内参和畸变参数。程序明确将畸变系数矩阵设置为 4 维，只保留 <code>k1, k2, p1, p2</code>，并通过标定 flags 固定高阶畸变项：</p>
+<ul>
+<li>固定 <code>k3</code></li>
+<li>固定 <code>k4</code></li>
+<li>固定 <code>k5</code></li>
+<li>使用 LU 分解 <code>CALIB_USE_LU</code></li>
+</ul>
+<p>该约束适用于多数普通镜头在畸变不极端时的工程实践，有助于稳定求解并减少过拟合风险。</p>
+<hr>
+<h2 id="8-重投影误差评估与坏样本标记"><a href="#8-重投影误差评估与坏样本标记" class="headerlink" title="8. 重投影误差评估与坏样本标记"></a>8. 重投影误差评估与坏样本标记</h2><p>程序对每张成功图像计算重投影误差：</p>
+<ol>
+<li>使用 <code>cv::projectPoints()</code> 将三维角点投影回图像</li>
+<li>计算检测角点与投影角点的 L2 误差</li>
+<li>归一化为每个视图的 RMS 误差并存储</li>
+</ol>
+<p>程序将误差超过 2.0 像素的图像标记为高误差样本，以便后续剔除或重新采集。</p>
+<hr>
+<h2 id="9-参数输出、保存与验证"><a href="#9-参数输出、保存与验证" class="headerlink" title="9. 参数输出、保存与验证"></a>9. 参数输出、保存与验证</h2><p>程序打印并保存如下结果：</p>
+<ul>
+<li>图像尺寸</li>
+<li>RMS 误差与总体重投影误差</li>
+<li>内参 <code>fx, fy, cx, cy</code></li>
+<li>畸变 <code>k1, k2, p1, p2</code>（k3 固定为 0）</li>
+</ul>
+<p>程序将结果写入 <code>calibration_results.txt</code>，并使用第一张图像做一次 <code>cv::undistort()</code> 去畸变对比，左右拼接后显示用于快速肉眼验证。</p>
+<hr>
+<h1 id="第二部分：去畸变过程"><a href="#第二部分：去畸变过程" class="headerlink" title="第二部分：去畸变过程"></a>第二部分：去畸变过程</h1><h2 id="1-参数输入与目标"><a href="#1-参数输入与目标" class="headerlink" title="1. 参数输入与目标"></a>1. 参数输入与目标</h2><p>程序使用已知标定参数进行去畸变，不依赖 OpenCV 的 <code>undistort</code>，而是直接按畸变模型计算像素映射。程序使用的畸变模型为常见的径向畸变 + 切向畸变：</p>
+<ul>
+<li>径向畸变：<code>k1, k2</code></li>
+<li>切向畸变：<code>p1, p2</code></li>
+</ul>
+<p>程序使用内参 <code>fx, fy, cx, cy</code> 完成像素与归一化坐标系的转换。</p>
+<hr>
+<h2 id="2-像素级映射计算流程"><a href="#2-像素级映射计算流程" class="headerlink" title="2. 像素级映射计算流程"></a>2. 像素级映射计算流程</h2><p>程序对输出图像的每个像素 <code>(u, v)</code> 执行如下步骤：</p>
+<ol>
+<li>将输出像素转换为归一化坐标：</li>
+</ol>
+<ul>
+<li><code>x = (u - cx) / fx</code></li>
+<li><code>y = (v - cy) / fy</code></li>
+</ul>
+<ol start="2">
+<li>计算半径：</li>
+</ol>
+<ul>
+<li><code>r = sqrt(x^2 + y^2)</code></li>
+</ul>
+<ol start="3">
+<li><p>计算畸变后的归一化坐标</p>
+</li>
+<li><p>将畸变坐标映射回像素坐标：</p>
+</li>
+</ol>
+<ul>
+<li><code>u_d = fx * x_d + cx</code></li>
+<li><code>v_d = fy * y_d + cy</code></li>
+</ul>
+<ol start="5">
+<li>使用最近邻插值从原图取值并填充到去畸变图像中：</li>
+</ol>
+<ul>
+<li>当 <code>(u_d, v_d)</code> 在图像范围内时取最近邻像素值</li>
+<li>当映射越界时填充 0</li>
+</ul>
+<p>该实现属于逆向采样路径，输出图像像素通过查表方式从输入畸变图读取，避免输出出现空洞。</p>
+<hr>
+<h1 id="标定与去畸变流程简图"><a href="#标定与去畸变流程简图" class="headerlink" title="标定与去畸变流程简图"></a>标定与去畸变流程简图</h1><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">采集棋盘格图像</span><br><span class="line">        |</span><br><span class="line">灰度 + CLAHE 预处理</span><br><span class="line">        |</span><br><span class="line">多尺度 findChessboardCorners 检测</span><br><span class="line">        |</span><br><span class="line">cornerSubPix 亚像素精确化</span><br><span class="line">        |</span><br><span class="line">calibrateCamera 求内参 + 畸变</span><br><span class="line">        |</span><br><span class="line">projectPoints 计算重投影误差并筛图</span><br><span class="line">        |</span><br><span class="line">保存参数 + undistort 快速验证</span><br><span class="line">        |</span><br><span class="line">去畸变：归一化 -&gt; 畸变模型 -&gt; 像素映射 -&gt; 插值采样</span><br></pre></td></tr></table></figure>
+
+<h2 id="最终效果："><a href="#最终效果：" class="headerlink" title="最终效果："></a>最终效果：</h2><p><img src="https://heihei-momo.github.io/picx-images-hosting/20260303/image-20260303100332889.6bhm7ugn6o.webp" alt="image-20260303100332889"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io">YinHao Ye</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io/2026/03/02/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/05%E7%9B%B8%E6%9C%BA%E5%8E%BB%E7%95%B8%E5%8F%98/">https://heihei-momo.github.io/2026/03/02/%E4%BC%A0%E7%BB%9F%E8%A7%86%E8%A7%89/05%E7%9B%B8%E6%9C%BA%E5%8E%BB%E7%95%B8%E5%8F%98/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heihei-momo.github.io" target="_blank">MoMo</a>！</span></div></div><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/03mobilesam%E8%BF%9B%E8%A1%8C%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="03Mobilesam+clip零样本图像语义分割"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">03Mobilesam+clip零样本图像语义分割</div></div><div class="info-2"><div class="info-item-1">MobileSAM 是对 Segment Anything Model（SAM）的轻量化改造版本，目标是在资源受限的设备（手机&#x2F;边缘端&#x2F;CPU）上也能“像 SAM 一样”做提示驱动分割（point&#x2F;box prompt）。MobileSAM 的核心做法是替换 SAM 中最重的图像编码器，并通过一种称为**解耦蒸馏（decoupled distillation）**的方法，让新编码器输出的图像特征能与原 SAM 的 mask decoder 保持兼容。  SAM 的基本范式SAM 的定位是“可提示的分割基础模型（promptable segmentation foundation model）”。它的典型推理流程是：  Image Encoder：把整张图像编码成一个高维 embedding（一次性计算，可复用） Prompt Encoder：把点&#x2F;框&#x2F;粗 mask 等提示编码成 prompt embedding Mask Decoder：结合图像 embedding + prompt embedding 输出分割 mask（可多次...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/02Deeplabv3+%E7%BD%91%E7%BB%9C/" title="02Deeplabv3+语义分割网络"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">02Deeplabv3+语义分割网络</div></div><div class="info-2"><div class="info-item-1">DeepLabv3+ 主要解决像素级语义分割中的两个关键矛盾： 语义信息与分辨率的矛盾：下采样越多语义越强，但边界细节越差   多尺度目标的矛盾：同一场景中目标尺度变化大，需要多尺度上下文  DeepLabv3+ 通过空洞卷积控制感受野，通过 ASPP 进行多尺度特征融合，并通过解码器补回细节。   核心组件1) 空洞卷积（Atrous Convolution）空洞卷积在卷积核元素之间插入间隔，从而在不增加参数量、不额外下采样的情况下扩大感受野。  dilation rate 越大，感受野越大 适合在保持特征图分辨率时提取更大范围语义  在 DeepLab 系列中，空洞卷积常用于替代部分 stride&#x3D;2 的下采样，配合输出步长（Output Stride, OS）控制最终特征图大小。 2) ASPP（Atrous Spatial Pyramid Pooling）ASPP 使用多分支并行结构，在不同 dilation rate 下做空洞卷积，并融合输出特征，实现多尺度上下文建模。 典型 ASPP 分支包括：  1x1 卷积分支 多个 3x3 空洞卷积分支（不同 dila...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">总览</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86%EF%BC%9A%E6%A0%87%E5%AE%9A%E8%BF%87%E7%A8%8B%EF%BC%88ROS-OpenCV%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">第一部分：标定过程（ROS + OpenCV）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E7%A8%8B%E5%BA%8F%E5%85%A5%E5%8F%A3%E4%B8%8E%E5%8F%82%E6%95%B0%E6%9D%A5%E6%BA%90"><span class="toc-number">2.1.</span> <span class="toc-text">1. 程序入口与参数来源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E4%B8%96%E7%95%8C%E5%9D%90%E6%A0%87%E7%B3%BB%E8%A7%92%E7%82%B9%E6%9E%84%E5%BB%BA"><span class="toc-number">2.2.</span> <span class="toc-text">2. 世界坐标系角点构建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9B%BE%E5%83%8F%E9%A2%84%E5%A4%84%E7%90%86%E4%B8%8E%E4%BD%8E%E5%AF%B9%E6%AF%94%E5%BA%A6%E5%A2%9E%E5%BC%BA"><span class="toc-number">2.3.</span> <span class="toc-text">3. 图像预处理与低对比度增强</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E5%A4%9A%E5%B0%BA%E5%BA%A6%E6%A3%80%E6%B5%8B%E7%AD%96%E7%95%A5"><span class="toc-number">2.4.</span> <span class="toc-text">4. 多尺度检测策略</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E6%A3%8B%E7%9B%98%E6%A0%BC%E8%A7%92%E7%82%B9%E6%A3%80%E6%B5%8B%E7%9A%84%E5%A4%9A%E7%AD%96%E7%95%A5%E7%BB%84%E5%90%88"><span class="toc-number">2.5.</span> <span class="toc-text">5. 棋盘格角点检测的多策略组合</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-%E4%BA%9A%E5%83%8F%E7%B4%A0%E7%BA%A7%E8%A7%92%E7%82%B9%E7%B2%BE%E7%A1%AE%E5%8C%96%E4%B8%8E%E5%9D%90%E6%A0%87%E5%9B%9E%E6%98%A0%E5%B0%84"><span class="toc-number">2.6.</span> <span class="toc-text">6. 亚像素级角点精确化与坐标回映射</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-%E6%A0%87%E5%AE%9A%E6%B1%82%E8%A7%A3%E4%B8%8E%E7%95%B8%E5%8F%98%E6%A8%A1%E5%9E%8B%E7%BA%A6%E6%9D%9F"><span class="toc-number">2.7.</span> <span class="toc-text">7. 标定求解与畸变模型约束</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-%E9%87%8D%E6%8A%95%E5%BD%B1%E8%AF%AF%E5%B7%AE%E8%AF%84%E4%BC%B0%E4%B8%8E%E5%9D%8F%E6%A0%B7%E6%9C%AC%E6%A0%87%E8%AE%B0"><span class="toc-number">2.8.</span> <span class="toc-text">8. 重投影误差评估与坏样本标记</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-%E5%8F%82%E6%95%B0%E8%BE%93%E5%87%BA%E3%80%81%E4%BF%9D%E5%AD%98%E4%B8%8E%E9%AA%8C%E8%AF%81"><span class="toc-number">2.9.</span> <span class="toc-text">9. 参数输出、保存与验证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%EF%BC%9A%E5%8E%BB%E7%95%B8%E5%8F%98%E8%BF%87%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">第二部分：去畸变过程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%8F%82%E6%95%B0%E8%BE%93%E5%85%A5%E4%B8%8E%E7%9B%AE%E6%A0%87"><span class="toc-number">3.1.</span> <span class="toc-text">1. 参数输入与目标</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%83%8F%E7%B4%A0%E7%BA%A7%E6%98%A0%E5%B0%84%E8%AE%A1%E7%AE%97%E6%B5%81%E7%A8%8B"><span class="toc-number">3.2.</span> <span class="toc-text">2. 像素级映射计算流程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%87%E5%AE%9A%E4%B8%8E%E5%8E%BB%E7%95%B8%E5%8F%98%E6%B5%81%E7%A8%8B%E7%AE%80%E5%9B%BE"><span class="toc-number">4.</span> <span class="toc-text">标定与去畸变流程简图</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E6%95%88%E6%9E%9C%EF%BC%9A"><span class="toc-number">4.1.</span> <span class="toc-text">最终效果：</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/" title="03fastlio2">03fastlio2</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*">03RS曲线和混合A*</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/02IMU%E9%A2%84%E7%A7%AF%E5%88%86%E3%80%81%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96%E3%80%81%E5%9B%9E%E7%8E%AF%E6%A3%80%E6%B5%8B%E3%80%81%E7%BA%BF%E6%80%A7%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98/" title="02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘">02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/05STDC%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="05STDC语义分割">05STDC语义分割</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="02局部路径规划">02局部路径规划</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/index.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By YinHao Ye</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

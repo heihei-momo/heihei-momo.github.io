@@ -1,0 +1,245 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>01A*全局路径规划 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="总览实现 ROS nav_core::BaseGlobalPlanner 插件形式的全局规划器。规划器从 costmap_2d::Costmap2DROS 获取代价地图，将地图离散为二值栅格（可通行&#x2F;障碍）。规划器在栅格上运行 A* 搜索，生成从起点到终点的栅格路径。规划器将栅格路径转换回世界坐标，补齐姿态朝向，形成 std::vector&lt;geometry_msgs::PoseS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="01A*全局路径规划">
+<meta property="og:url" content="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:description" content="总览实现 ROS nav_core::BaseGlobalPlanner 插件形式的全局规划器。规划器从 costmap_2d::Costmap2DROS 获取代价地图，将地图离散为二值栅格（可通行&#x2F;障碍）。规划器在栅格上运行 A* 搜索，生成从起点到终点的栅格路径。规划器将栅格路径转换回世界坐标，补齐姿态朝向，形成 std::vector&lt;geometry_msgs::PoseS">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-03-02T09:21:50.000Z">
+<meta property="article:modified_time" content="2026-03-03T03:07:49.185Z">
+<meta property="article:author" content="YinHao Ye">
+<meta property="article:tag" content="全局路径规划">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "01A*全局路径规划",
+  "url": "https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/",
+  "image": "https://heihei-momo.github.io/img/avatar.jpg",
+  "datePublished": "2026-03-02T09:21:50.000Z",
+  "dateModified": "2026-03-03T03:07:49.185Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "YinHao Ye",
+      "url": "https://heihei-momo.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '01A*全局路径规划',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a><a class="nav-page-title" href="/"><span class="site-name">01A*全局路径规划</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"></div></nav><div id="post-info"><h1 class="post-title">01A*全局路径规划</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-02T09:21:50.000Z" title="发表于 2026-03-02 17:21:50">2026-03-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-03T03:07:49.185Z" title="更新于 2026-03-03 11:07:49">2026-03-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">路径规划</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="总览"><a href="#总览" class="headerlink" title="总览"></a>总览</h2><p>实现 ROS <code>nav_core::BaseGlobalPlanner</code> 插件形式的全局规划器。规划器从 <code>costmap_2d::Costmap2DROS</code> 获取代价地图，将地图离散为二值栅格（可通行&#x2F;障碍）。规划器在栅格上运行 A* 搜索，生成从起点到终点的栅格路径。规划器将栅格路径转换回世界坐标，补齐姿态朝向，形成 <code>std::vector&lt;geometry_msgs::PoseStamped&gt;</code> 的 <code>plan</code>，并发布为 <code>nav_msgs/Path</code> 话题。</p>
+<hr>
+<h2 id="A-的核心思想"><a href="#A-的核心思想" class="headerlink" title="A* 的核心思想"></a>A* 的核心思想</h2><p>A* 在栅格图上寻找从起点到终点的最小代价路径。A* 维护一个候选集合（Open）和一个已处理集合（Closed），并用代价函数对候选节点排序。</p>
+<h3 id="1-代价函数"><a href="#1-代价函数" class="headerlink" title="1) 代价函数"></a>1) 代价函数</h3><p>A* 使用如下评分：</p>
+<ul>
+<li><code>g(n)</code>：从起点走到当前节点 <code>n</code> 的累计代价</li>
+<li><code>h(n)</code>：从当前节点 <code>n</code> 到终点的启发式估计代价</li>
+<li><code>f(n) = g(n) + h(n)</code>：综合评分，用于选择下一步扩展的节点</li>
+</ul>
+<p>该实现中 <code>Point</code> 结构包含 <code>f, g, h</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Point</span>&#123;</span><br><span class="line">    <span class="type">int</span> x,y;</span><br><span class="line">    <span class="type">int</span> f,g,h;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-启发式函数-h-n"><a href="#2-启发式函数-h-n" class="headerlink" title="2) 启发式函数 h(n)"></a>2) 启发式函数 h(n)</h3><p>代码使用 Manhattan 距离作为启发式，并乘以直移代价 <code>ZXDJ</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ZXDJ 10</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">getH</span><span class="params">(Point Current_pos,Point end_pos)</span></span>&#123;</span><br><span class="line">    <span class="type">int</span> level=<span class="built_in">abs</span>(end_pos.x-Current_pos.x);</span><br><span class="line">    <span class="type">int</span> vertical=<span class="built_in">abs</span>(end_pos.y-Current_pos.y);</span><br><span class="line">    <span class="keyword">return</span> ZXDJ*(level+vertical);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该启发式在 4 邻域移动模型下通常满足一致性与可采纳性。在 8 邻域模型下仍具备良好引导性，但不是最紧的估计。</p>
+<h3 id="3-邻域扩展与移动代价"><a href="#3-邻域扩展与移动代价" class="headerlink" title="3) 邻域扩展与移动代价"></a>3) 邻域扩展与移动代价</h3><p>该实现使用 8 邻域扩展（上下左右 + 四个对角）。直移代价 <code>ZXDJ=10</code>，斜移代价 <code>XXDJ=14</code>（近似 <code>10*sqrt(2)</code>）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> XXDJ 14</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">dirent</span>&#123;p_up,p_down,p_left,p_right,p_lup,p_ldown,p_rup,p_rdown&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>扩展时对 <code>g</code> 加上对应代价：</p>
+<ul>
+<li>上下左右：<code>g += 10</code></li>
+<li>对角线：<code>g += 14</code></li>
+</ul>
+<hr>
+<h2 id="代码中的-A-规划流程"><a href="#代码中的-A-规划流程" class="headerlink" title="代码中的 A* 规划流程"></a>代码中的 A* 规划流程</h2><h3 id="1-从-Costmap-刷新二值栅格地图"><a href="#1-从-Costmap-刷新二值栅格地图" class="headerlink" title="1) 从 Costmap 刷新二值栅格地图"></a>1) 从 Costmap 刷新二值栅格地图</h3><p><code>map_fresh()</code> 将 costmap 的每个栅格转成 <code>map_v</code>（障碍&#x3D;1，可通行&#x3D;0），并初始化 <code>pathMap</code>（访问标记&#x3D;0）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">originX = costmap_map-&gt;<span class="built_in">getOriginX</span>();</span><br><span class="line">originY = costmap_map-&gt;<span class="built_in">getOriginY</span>();</span><br><span class="line">width   = costmap_map-&gt;<span class="built_in">getSizeInCellsX</span>();</span><br><span class="line">height  = costmap_map-&gt;<span class="built_in">getSizeInCellsY</span>();</span><br><span class="line">resolution = costmap_map-&gt;<span class="built_in">getResolution</span>();</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> temp = <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(costmap_map-&gt;<span class="built_in">getCost</span>(ix, iy));</span><br><span class="line"><span class="keyword">if</span>(temp&gt;=<span class="number">1</span> &amp;&amp; temp&lt;=<span class="number">254</span>)&#123;</span><br><span class="line">    temp_v.<span class="built_in">push_back</span>(<span class="number">1</span>); <span class="comment">// 障碍</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    temp_v.<span class="built_in">push_back</span>(<span class="number">0</span>); <span class="comment">// 可通行</span></span><br><span class="line">&#125;</span><br><span class="line">temp_c.<span class="built_in">push_back</span>(<span class="number">0</span>);     <span class="comment">// 未访问</span></span><br></pre></td></tr></table></figure>
+
+<p>该实现将代价范围 <code>[1, 254]</code> 直接视作障碍，将 <code>0</code>（自由）与 <code>255</code>（未知）视作可通行。该二值化策略简化了模型，同时会让未知区域可被规划穿过。</p>
+<hr>
+<h3 id="2-起点终点从世界坐标转换为栅格坐标"><a href="#2-起点终点从世界坐标转换为栅格坐标" class="headerlink" title="2) 起点终点从世界坐标转换为栅格坐标"></a>2) 起点终点从世界坐标转换为栅格坐标</h3><p><code>makePlan()</code> 从 <code>start</code> 和 <code>goal</code> 的世界坐标计算栅格索引：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> start_sg_x = (start_P_x- originX)/resolution;</span><br><span class="line"><span class="type">int</span> start_sg_y = (start_P_y- originY)/resolution;</span><br><span class="line"><span class="type">int</span> end_sg_x   = (end_P_x- originX)/resolution;</span><br><span class="line"><span class="type">int</span> end_sg_y   = (end_P_y- originY)/resolution;</span><br></pre></td></tr></table></figure>
+
+<p>该转换将世界坐标系下的米制坐标映射到地图栅格索引。规划时使用的坐标系是栅格坐标系。</p>
+<hr>
+<h3 id="3-Open-集合、Closed-集合与节点结构"><a href="#3-Open-集合、Closed-集合与节点结构" class="headerlink" title="3) Open 集合、Closed 集合与节点结构"></a>3) Open 集合、Closed 集合与节点结构</h3><p>该实现以“树节点 + 父指针”的方式组织搜索过程：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">treeNode</span>&#123;</span><br><span class="line">    Point pos;</span><br><span class="line">    vector&lt;treeNode*&gt; child;</span><br><span class="line">    treeNode* pParent;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>Open 集合由 <code>buff</code> 向量承担，存储待扩展节点</li>
+<li>Closed 集合由 <code>pathMap[x][y]=1</code> 承担，表示该栅格已经走过（已处理）</li>
+</ul>
+<p>起点被创建为根节点，并立即标记为走过：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">treeNode* pRoot=<span class="built_in">createTreeNode</span>(start_sg_x,start_sg_y);</span><br><span class="line">pathMap[start_sg_x][start_sg_y]=<span class="number">1</span>;</span><br><span class="line">treeNode* pCurrent=pRoot;</span><br><span class="line">vector&lt;treeNode*&gt; buff;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="4-搜索循环：扩展当前节点的-8-邻域"><a href="#4-搜索循环：扩展当前节点的-8-邻域" class="headerlink" title="4) 搜索循环：扩展当前节点的 8 邻域"></a>4) 搜索循环：扩展当前节点的 8 邻域</h3><p>循环中对当前节点 <code>pCurrent</code> 扩展 8 个方向，生成子节点 <code>pChild</code>。子节点只在满足两个条件时被接受：</p>
+<ul>
+<li>栅格可通行：<code>map_v[x][y]==0</code></li>
+<li>未访问：<code>pathMap[x][y]==0</code></li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>((map_v[pChild-&gt;pos.x][pChild-&gt;pos.y]==<span class="number">0</span>) &amp;&amp;</span><br><span class="line">   (pathMap[pChild-&gt;pos.x][pChild-&gt;pos.y]==<span class="number">0</span>))</span><br><span class="line">&#123;</span><br><span class="line">    pChild-&gt;pos.h=<span class="built_in">getH</span>(pChild-&gt;pos,endpos);</span><br><span class="line">    pChild-&gt;pos.f=pChild-&gt;pos.g+pChild-&gt;pos.h;</span><br><span class="line">    pCurrent-&gt;child.<span class="built_in">push_back</span>(pChild);</span><br><span class="line">    pChild-&gt;pParent=pCurrent;</span><br><span class="line">    buff.<span class="built_in">push_back</span>(pChild);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该流程将新节点加入 Open 集合 <code>buff</code>，并通过 <code>pParent</code> 保存回溯信息。</p>
+<hr>
+<h3 id="5-从-Open-集合选择-f-最小的节点作为下一步"><a href="#5-从-Open-集合选择-f-最小的节点作为下一步" class="headerlink" title="5) 从 Open 集合选择 f 最小的节点作为下一步"></a>5) 从 Open 集合选择 f 最小的节点作为下一步</h3><p>该实现使用线性扫描找到 <code>buff</code> 中 <code>f</code> 最小的节点：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">itMin=buff.<span class="built_in">begin</span>();</span><br><span class="line"><span class="keyword">for</span> (it=buff.<span class="built_in">begin</span>(); it!=buff.<span class="built_in">end</span>(); it++)&#123;</span><br><span class="line">    itMin=(((*itMin)-&gt;pos.f &lt; (*it)-&gt;pos.f)? itMin:it);</span><br><span class="line">&#125;</span><br><span class="line">pCurrent=*itMin;</span><br><span class="line">pathMap[pCurrent-&gt;pos.x][pCurrent-&gt;pos.y]=<span class="number">1</span>;</span><br><span class="line">buff.<span class="built_in">erase</span>(itMin);</span><br></pre></td></tr></table></figure>
+
+<p>这一步对应 A* 的核心选择策略。选择 <code>f</code> 最小的候选节点可以在保证最优性的同时使用启发式加速搜索。</p>
+<hr>
+<h3 id="6-终止条件与路径回溯"><a href="#6-终止条件与路径回溯" class="headerlink" title="6) 终止条件与路径回溯"></a>6) 终止条件与路径回溯</h3><p>当当前节点坐标与终点一致时，搜索成功结束。若 Open 集合为空则搜索失败：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(endpos.x==pCurrent-&gt;pos.x &amp;&amp; endpos.y==pCurrent-&gt;pos.y)&#123;</span><br><span class="line">    isFindEnd=<span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span>(buff.<span class="built_in">size</span>()==<span class="number">0</span>)&#123;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>成功时从终点节点沿 <code>pParent</code> 指针回溯到起点，得到反向路径，再反转为正向路径：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(pCurrent)&#123;</span><br><span class="line">    pathPoints.<span class="built_in">push_back</span>(&#123;pCurrent-&gt;pos.x, pCurrent-&gt;pos.y&#125;);</span><br><span class="line">    pCurrent=pCurrent-&gt;pParent;</span><br><span class="line">&#125;</span><br><span class="line">std::<span class="built_in">reverse</span>(pathPoints.<span class="built_in">begin</span>(),pathPoints.<span class="built_in">end</span>());</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="7-栅格路径转换为-ROS-plan，并补齐朝向"><a href="#7-栅格路径转换为-ROS-plan，并补齐朝向" class="headerlink" title="7) 栅格路径转换为 ROS plan，并补齐朝向"></a>7) 栅格路径转换为 ROS plan，并补齐朝向</h3><p>程序将路径点（除去起点与终点）转换为世界坐标加入 <code>plan</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pose.pose.position.x = pathPoints[p].x * resolution + originX;</span><br><span class="line">pose.pose.position.y = pathPoints[p].y * resolution + originY;</span><br></pre></td></tr></table></figure>
+
+<p>程序根据“指向下一个点”的方向计算 yaw，并写入四元数作为姿态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">double</span> dx = pathPoints[p<span class="number">+1</span>].x - pathPoints[p].x;</span><br><span class="line"><span class="type">double</span> dy = pathPoints[p<span class="number">+1</span>].y - pathPoints[p].y;</span><br><span class="line"><span class="type">double</span> yaw = <span class="built_in">atan2</span>(dy, dx);</span><br><span class="line">pose.pose.orientation = tf::<span class="built_in">createQuaternionMsgFromYaw</span>(yaw);</span><br></pre></td></tr></table></figure>
+
+<p>最终 <code>plan</code> 结构为：</p>
+<ul>
+<li>第一项：<code>start</code></li>
+<li>中间项：A* 生成的路径点（世界坐标 + 朝向）</li>
+<li>最后一项：<code>goal</code></li>
+</ul>
+<hr>
+<h2 id="流程简图"><a href="#流程简图" class="headerlink" title="流程简图"></a>流程简图</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Costmap2D -&gt; map_fresh() 二值栅格</span><br><span class="line">        |</span><br><span class="line">start/goal 世界坐标 -&gt; 栅格索引</span><br><span class="line">        |</span><br><span class="line">A* 搜索：</span><br><span class="line">  Open=buff，Closed=pathMap</span><br><span class="line">  8 邻域扩展，g 直移10/斜移14</span><br><span class="line">  h=Manhattan*10</span><br><span class="line">  f=g+h 选择最小</span><br><span class="line">        |</span><br><span class="line">pParent 回溯得到栅格路径</span><br><span class="line">        |</span><br><span class="line">栅格 -&gt; 世界坐标 + yaw -&gt; plan</span><br><span class="line">        |</span><br><span class="line">publishPlan() 发布 nav_msgs/Path</span><br></pre></td></tr></table></figure>
+
+<h2 id="最终效果"><a href="#最终效果" class="headerlink" title="最终效果"></a>最终效果</h2><p><img src="https://heihei-momo.github.io/picx-images-hosting/20260303/image-20260303104241617.7zqz53f4um.webp" alt="image-20260303104241617"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io">YinHao Ye</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/">https://heihei-momo.github.io/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heihei-momo.github.io" target="_blank">MoMo</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">全局路径规划</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/01cartographer%E3%80%81A-LOAM%E3%80%81LEGO-LOAM%E3%80%81LIO-SAM%E4%BB%8B%E7%BB%8D%E5%A4%8D%E7%8E%B0/" title="01cartographer、A-LOAM、LEGO-LOAM、LIO-SAM介绍复现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">01cartographer、A-LOAM、LEGO-LOAM、LIO-SAM介绍复现</div></div><div class="info-2"><div class="info-item-1">1.cartographer的配置gazebo仿真环境下运行cartographer建图  2.A-LOAM算法学习笔记LOAM因为被作者闭源，且代码晦涩，香港科技大学秦通博士使用Eigen和Ceres-Solver对原始LOAM代码进行了重构，在算法原理保持基本不变的情况下，对代码框架进行优化，简洁明了，也就是A-LOAM。 系统的节点图如下图所示，主要分为四个节点  &#x2F;kittiHelper节点，对应源码中的kittiHelper.cpp，该节点读取kitti odometry的数据集的数据，具体包括上图的5个topic其中点云话题&#x2F;velodyne_points 的作用最关键，是将原始激光雷达数据构造成的PCL点云数据（ROS格式）发布，其他四个topic只起到一个可视化的作用。 &#x2F;ascanRegistration节点，对应源码中的scanRegistration.cpp，主要是接收点云数据，然后去除噪点，计算扫描线，进行时间戳的校准等，将每个点云根据scanID放到对应的子点云，并将子点云合成一帧点云。 接下来就是对雷达数据的特征提取，首先...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/03mobilesam%E8%BF%9B%E8%A1%8C%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="03Mobilesam+clip零样本图像语义分割"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">03Mobilesam+clip零样本图像语义分割</div></div><div class="info-2"><div class="info-item-1">MobileSAM 是对 Segment Anything Model（SAM）的轻量化改造版本，目标是在资源受限的设备（手机&#x2F;边缘端&#x2F;CPU）上也能“像 SAM 一样”做提示驱动分割（point&#x2F;box prompt）。MobileSAM 的核心做法是替换 SAM 中最重的图像编码器，并通过一种称为**解耦蒸馏（decoupled distillation）**的方法，让新编码器输出的图像特征能与原 SAM 的 mask decoder 保持兼容。  SAM 的基本范式SAM 的定位是“可提示的分割基础模型（promptable segmentation foundation model）”。它的典型推理流程是：  Image Encoder：把整张图像编码成一个高维 embedding（一次性计算，可复用） Prompt Encoder：把点&#x2F;框&#x2F;粗 mask 等提示编码成 prompt embedding Mask Decoder：结合图像 embedding + prompt embedding 输出分割 mask（可多次...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">03RS曲线和混合A*</div></div><div class="info-2"><div class="info-item-1">1.RS曲线1.1RS曲线介绍Reeds-Shepp 曲线（Reeds–Shepp Curve）是一种描述可前进和可后退，但转弯半径不变的的非完整约束车辆的最短路径，是对Dubins曲线的扩展，以下是曲线的示例。  rs曲线主要用于短距离连接两个姿态点（x，y，theta），一般用L表示左转，R表示右转，+表示向前，-表示向后，Cbeta，中的下标beta表示转过固定beta角度（曲线的圆心角），|表示车辆运动由正向变为反向，或是由反向变为正向，C表示左转L或者右转R，如果是CC连在一起，那么一定是R和L的切换。（因为如果不是，那就会退化，如La+Lb+&#x3D;La+b+，L+L-&#x3D;原地不动）据论文，为实现最优路径（路径最短），总共有五类路径族，分别是：   CSC CCC CCCC CCSC CCSCC    可以分为48种情况，后有两种被证明不可能为最优（L-R+L-，R-L+R-） RS曲线具有三种变换可以简化计算，分别是时间翻转，反射，向后变换  根据这三种变换，可以把48种路径简化为12种基路径 1.2RS曲线一般使用过程为了简化计算，一般会将曲线分为三步...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">7</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">总览</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#A-%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="toc-number">2.</span> <span class="toc-text">A* 的核心思想</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E4%BB%A3%E4%BB%B7%E5%87%BD%E6%95%B0"><span class="toc-number">2.1.</span> <span class="toc-text">1) 代价函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%90%AF%E5%8F%91%E5%BC%8F%E5%87%BD%E6%95%B0-h-n"><span class="toc-number">2.2.</span> <span class="toc-text">2) 启发式函数 h(n)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E9%82%BB%E5%9F%9F%E6%89%A9%E5%B1%95%E4%B8%8E%E7%A7%BB%E5%8A%A8%E4%BB%A3%E4%BB%B7"><span class="toc-number">2.3.</span> <span class="toc-text">3) 邻域扩展与移动代价</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%A3%E7%A0%81%E4%B8%AD%E7%9A%84-A-%E8%A7%84%E5%88%92%E6%B5%81%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">代码中的 A* 规划流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E4%BB%8E-Costmap-%E5%88%B7%E6%96%B0%E4%BA%8C%E5%80%BC%E6%A0%85%E6%A0%BC%E5%9C%B0%E5%9B%BE"><span class="toc-number">3.1.</span> <span class="toc-text">1) 从 Costmap 刷新二值栅格地图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E8%B5%B7%E7%82%B9%E7%BB%88%E7%82%B9%E4%BB%8E%E4%B8%96%E7%95%8C%E5%9D%90%E6%A0%87%E8%BD%AC%E6%8D%A2%E4%B8%BA%E6%A0%85%E6%A0%BC%E5%9D%90%E6%A0%87"><span class="toc-number">3.2.</span> <span class="toc-text">2) 起点终点从世界坐标转换为栅格坐标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-Open-%E9%9B%86%E5%90%88%E3%80%81Closed-%E9%9B%86%E5%90%88%E4%B8%8E%E8%8A%82%E7%82%B9%E7%BB%93%E6%9E%84"><span class="toc-number">3.3.</span> <span class="toc-text">3) Open 集合、Closed 集合与节点结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E6%90%9C%E7%B4%A2%E5%BE%AA%E7%8E%AF%EF%BC%9A%E6%89%A9%E5%B1%95%E5%BD%93%E5%89%8D%E8%8A%82%E7%82%B9%E7%9A%84-8-%E9%82%BB%E5%9F%9F"><span class="toc-number">3.4.</span> <span class="toc-text">4) 搜索循环：扩展当前节点的 8 邻域</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E4%BB%8E-Open-%E9%9B%86%E5%90%88%E9%80%89%E6%8B%A9-f-%E6%9C%80%E5%B0%8F%E7%9A%84%E8%8A%82%E7%82%B9%E4%BD%9C%E4%B8%BA%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="toc-number">3.5.</span> <span class="toc-text">5) 从 Open 集合选择 f 最小的节点作为下一步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E7%BB%88%E6%AD%A2%E6%9D%A1%E4%BB%B6%E4%B8%8E%E8%B7%AF%E5%BE%84%E5%9B%9E%E6%BA%AF"><span class="toc-number">3.6.</span> <span class="toc-text">6) 终止条件与路径回溯</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-%E6%A0%85%E6%A0%BC%E8%B7%AF%E5%BE%84%E8%BD%AC%E6%8D%A2%E4%B8%BA-ROS-plan%EF%BC%8C%E5%B9%B6%E8%A1%A5%E9%BD%90%E6%9C%9D%E5%90%91"><span class="toc-number">3.7.</span> <span class="toc-text">7) 栅格路径转换为 ROS plan，并补齐朝向</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%81%E7%A8%8B%E7%AE%80%E5%9B%BE"><span class="toc-number">4.</span> <span class="toc-text">流程简图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E6%95%88%E6%9E%9C"><span class="toc-number">5.</span> <span class="toc-text">最终效果</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/03fastlio2/" title="03fastlio2">03fastlio2</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="03RS曲线和混合A*">03RS曲线和混合A*</a><time datetime="2026-03-02T09:21:53.000Z" title="发表于 2026-03-02 17:21:53">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/02IMU%E9%A2%84%E7%A7%AF%E5%88%86%E3%80%81%E4%BD%8D%E5%A7%BF%E5%9B%BE%E4%BC%98%E5%8C%96%E3%80%81%E5%9B%9E%E7%8E%AF%E6%A3%80%E6%B5%8B%E3%80%81%E7%BA%BF%E6%80%A7%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98/" title="02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘">02IMU预积分、位姿图优化、回环检测、线性非线性最小二乘</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/05STDC%E8%AF%AD%E4%B9%89%E5%88%86%E5%89%B2/" title="05STDC语义分割">05STDC语义分割</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="02局部路径规划">02局部路径规划</a><time datetime="2026-03-02T09:21:52.000Z" title="发表于 2026-03-02 17:21:52">2026-03-02</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/index.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By YinHao Ye</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
