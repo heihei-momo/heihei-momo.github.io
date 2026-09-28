@@ -1856,6 +1856,13 @@ a {
 a:hover {
   color: #73a2fa;
 }
+#site-title,
+#site-subtitle,
+.site-name,
+#aside-content .author-info-name,
+#aside-content .author-info-description {
+  font-family: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
 .text-center {
   text-align: center;
 }
