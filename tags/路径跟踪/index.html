@@ -1,0 +1,321 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>标签: 路径跟踪 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website">
+<meta property="og:title" content="MoMo">
+<meta property="og:url" content="https://heihei-momo.github.io/tags/%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:author" content="YinHao Ye">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json"></script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/tags/%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-kuaile@5.3.0/index.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '标签: 路径跟踪',
+  isHighlightShrink: false,
+  isToc: false,
+  pageType: 'tag'
+}</script><style> #site-title,#site-subtitle,.site-name,#aside-content .author-info-name{font-weight:400} #page-header #site-title{font-size:clamp(3.4rem,8vw,5.4rem)} #page-header #site-subtitle{font-size:clamp(1.6rem,3.8vw,2.9rem)} /* 卡片半透明：正文列 / 文章列表 / 侧栏 widget / 分页 / 文章容器 都用的 --card-bg */ :root{--card-bg:rgba(255,255,255,0.6)} [data-theme='dark']{--card-bg:rgba(18,18,18,0.6)} /* 首页横幅不加任何压暗（保持壁纸原亮度），靠文字阴影保证标题可读 */ #page-header.full_page:before{background:transparent} /* 壁纸偏亮，用文字阴影保证站名/副标题清晰（不靠压暗整片） */ #page-header #site-title,#page-header #site-subtitle{text-shadow:0 0 3px rgba(0,0,0,0.45),0 2px 12px rgba(0,0,0,0.5)} /* 页脚不再自带图片与遮罩，让整页壁纸连续到底（消除底部那条"截断"暗带） */ #footer{background-color:transparent} #footer:before{background-color:transparent} /* 顶部导航栏：淡玻璃悬浮条（左右留边、更透明） */ #nav{
+  left:12px;right:12px;
+  width:auto;
+  margin:8px 0 0;
+  padding:0 26px;
+  background:rgba(255,255,255,0.26);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.28);
+  border-radius:14px;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,0.3);
+} /* 菜单（首页 / 个人简介）在栏目内水平居中；左上角 MoMo 保持原位 */ #nav #menus{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)} /* 栏目条上改用深色文字（原来压在壁纸上的浅灰字看不清） */ #nav a,#nav span.site-page,#nav #blog-info,#nav #toggle-menu{color:var(--font-color);text-shadow:none} #nav a:hover,#nav span.site-page:hover,#nav #toggle-menu:hover{color:#73a2fa} #nav .site-name{text-shadow:none} /* 滚动后的固定状态同样保持透明；并补偿 8px 上边距（隐藏动画按 60px 高度算） */ #page-header.nav-fixed #nav{top:-68px;background:rgba(255,255,255,0.32)} #page-header.not-top-img #nav{background:rgba(255,255,255,0.32)} [data-theme='dark'] #nav, [data-theme='dark'] #page-header.nav-fixed > #nav, [data-theme='dark'] #page-header.not-top-img > #nav{background:rgba(18,18,18,0.42);border-color:rgba(255,255,255,0.10)} /* 导航栏字体整体放大（基准字号改 16px 后按 1.66em 保持原视觉大小） */ #nav{font-size:1.66em} #nav .site-page{font-size:0.95em} #nav #blog-info .site-name{font-size:1.05em} #sidebar #sidebar-menus .menus_items .site-page{font-size:1.3em} /* 侧栏作者卡的统计里去掉「分类」入口，只留 文章 / 标签 */ #aside-content .site-data > a[href$="categories/"]{display:none} /* 首页文章列表：规整两列网格，所有卡片尺寸完全一致，右缘落在侧栏列边界上 */ #recent-posts .recent-post-items{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:22px;
+  align-items:stretch;
+} #recent-posts .recent-post-item{
+  display:block;
+  width:auto;
+  min-width:0;
+  margin-bottom:0;
+  height:275px;
+  border-radius:18px;
+} #recent-posts .recent-post-item > .recent-post-info{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .content{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .article-title{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .article-title{font-size:1.75em;line-height:1.45} #recent-posts .recent-post-item > .recent-post-info > .article-meta-wrap{
+  font-size:1em;margin:10px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+} #recent-posts .recent-post-item > .recent-post-info > .content{font-size:1.05em;line-height:1.8} @media screen and (max-width:768px){
+  #recent-posts .recent-post-items{grid-template-columns:1fr;gap:18px}
+  #recent-posts .recent-post-item{height:auto;min-height:220px}
+} /* 内容区加宽：把左右两边的空白利用起来（主题默认 max-width 只有 1200px） */ .layout, .layout.hide-aside{max-width:1800px} @media screen and (min-width:769px){
+  #page-header #post-info > *{max-width:1800px}
+} /* ===== 开头文字特效 ===== */ /* MoMo：纯白 + 柔和呼吸光晕 + 入场浮现（不用彩色流光） */ #page-header #site-title{
+  color:#fff;
+  text-shadow:none;
+  animation:momo-in .9s cubic-bezier(.22,1,.36,1) both,momo-glow 4.5s ease-in-out infinite;
+} @keyframes momo-glow{
+  0%,100%{filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,255,255,.15))}
+  50%{filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(170,220,255,.45))}
+} @keyframes momo-in{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}} /* 副标题：入场 + 呼吸光晕（保留暗影保证在亮壁纸上可读） */ #page-header #site-subtitle{
+  animation:sub-in 1s .3s cubic-bezier(.22,1,.36,1) both,sub-glow 3.6s ease-in-out infinite;
+} @keyframes sub-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}} @keyframes sub-glow{
+  0%,100%{text-shadow:0 0 3px rgba(0,0,0,.5),0 2px 12px rgba(0,0,0,.55)}
+  50%{text-shadow:0 0 3px rgba(0,0,0,.5),0 2px 12px rgba(0,0,0,.55),0 0 22px rgba(125,211,252,.85)}
+} /* 打字机光标：白色（继承副标题的暗影，亮壁纸上也清晰） */ #page-header #site-subtitle .typed-cursor{color:#fff;font-size:.9em} /* ===== 动态壁纸（零资源版）：整页壁纸极缓呼吸缩放 ===== */ #web_bg,#web_bg.bg-animation{animation:to_show 4s,wallpaper-breathe 26s ease-in-out infinite alternate;will-change:transform} @keyframes wallpaper-breathe{from{transform:scale(1)}to{transform:scale(1.07)}} /* 横幅全部改成透明，让壁纸/视频一直贯到顶部（否则横幅的静态图会盖住视频） */ #page-header{background-color:transparent !important;background-image:none !important} /* 视频壁纸图层（桌面端由底部脚本注入 <video id="bg-video">，在 #web_bg 之上、内容之下） */ #bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-998;pointer-events:none} /* 尊重系统"减少动态效果"设置：只保留淡入，不做缩放 */ @media (prefers-reduced-motion: reduce){
+  #web_bg,#web_bg.bg-animation{animation:to_show 4s}
+} /* 桌面端：右侧栏与正文列对调，把侧栏放到最左边（手机端不受影响，仍是文章在上） */ @media screen and (min-width:901px){
+  #aside-content{order:-1;padding-left:0;padding-right:15px}
+} /* 侧栏标签云：主题按热度给的是 #999~#99a9bf 浅灰（内联写死），半透明卡片上发虚
+   —— 覆盖成正常文字色（暗色模式会自动跟随），字号分档保留，悬停仍变蓝 */
+#aside-content .card-tag-cloud a{color:var(--font-color) !important} /* 背景音乐：左下角悬浮圆钮（网易云图标），播放中带一圈呼吸光环 */ #momo-music-btn{position:fixed;left:18px;bottom:18px;z-index:100;width:42px;height:42px;padding:0;
+  display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;
+  -webkit-box-pack:center;justify-content:center;cursor:pointer;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.28);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:0 6px 16px -8px rgba(0,0,0,0.4);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+#momo-music-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 22px -8px rgba(0,0,0,0.5)} #momo-music-btn img{width:68%;height:68%;object-fit:contain;display:block;border-radius:50%;pointer-events:none} #momo-music-btn.playing{background:rgba(255,255,255,0.5)} #momo-music-btn.playing::after{content:'';position:absolute;left:-4px;top:-4px;right:-4px;bottom:-4px;
+  border-radius:50%;border:2px solid rgba(115,162,250,0.8);animation:momo-music-ring 1.6s ease-out infinite}
+@keyframes momo-music-ring{0%{transform:scale(0.86);opacity:0.9}100%{transform:scale(1.28);opacity:0}} [data-theme='dark'] #momo-music-btn{background:rgba(18,18,18,0.5);border-color:rgba(255,255,255,0.14)} @media screen and (max-width:768px){#momo-music-btn{left:14px;bottom:14px;width:38px;height:38px}} /* 实时 FPS 读数：右下角常驻小药丸（玻璃质感、不挡点击、数字等宽不跳动） */ #momo-fps{position:fixed;right:62px;bottom:46px;z-index:100;pointer-events:none;
+  padding:3px 9px;border-radius:9px;font-size:11px;font-weight:600;letter-spacing:0.3px;
+  font-variant-numeric:tabular-nums;line-height:1.2;
+  background:rgba(255,255,255,0.26);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.3);color:var(--font-color);opacity:0.8}
+[data-theme='dark'] #momo-fps{background:rgba(18,18,18,0.45);border-color:rgba(255,255,255,0.12)} #momo-fps.low{color:#d32f2f} @media screen and (max-width:768px){#momo-fps{right:52px;bottom:46px;font-size:10px}} /* 作者卡按钮：偏紫渐变 + 流光流动 + 呼吸光晕 + 悬停箭头（文字在配置里是"前往小窝"） */ #aside-content .card-info #card-info-btn{
+  position:relative;overflow:hidden;color:#fff;border-radius:9px;font-weight:600;letter-spacing:1px;
+  background:linear-gradient(120deg,#7c5cff 0%,#a78bfa 45%,#c084fc 100%);background-size:220% 220%;
+  text-shadow:0 1px 2px rgba(76,29,149,0.35);
+  animation:momo-nest-flow 7s ease-in-out infinite,momo-nest-glow 3.6s ease-in-out infinite;
+  transition:transform 0.3s,box-shadow 0.3s}
+#aside-content .card-info #card-info-btn:hover{
+  background:linear-gradient(120deg,#8b5cf6 0%,#a78bfa 45%,#c084fc 100%) !important;
+  transform:translateY(-2px) scale(1.02)}
+#aside-content .card-info #card-info-btn span::after{
+  content:' 🚗';display:inline-block;transition:transform 0.3s;opacity:0.95}
+#aside-content .card-info #card-info-btn:hover span::after{transform:translateX(6px)} @keyframes momo-nest-flow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}} @keyframes momo-nest-glow{
+  0%,100%{box-shadow:0 6px 18px -8px rgba(139,92,246,0.75)}
+  50%{box-shadow:0 9px 26px -6px rgba(167,139,250,1)}}
+/* 二维码弹窗：点社交图标（微信/QQ/B站）弹出对应二维码，点任意处或 Esc 关闭 */ #momo-qr-mask{position:fixed;left:0;top:0;right:0;bottom:0;z-index:200;display:none;
+  -webkit-box-align:center;align-items:center;-webkit-box-pack:center;justify-content:center;
+  background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#momo-qr-mask.show{display:-webkit-box;display:flex} #momo-qr-box{background:rgba(255,255,255,0.97);padding:14px 14px 10px;border-radius:14px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.35);text-align:center;max-width:86vw}
+#momo-qr-box img{display:block;max-width:min(320px,70vw);max-height:66vh;width:auto;height:auto;
+  border-radius:8px;margin:0 auto}
+#momo-qr-box .t{margin-top:9px;font-size:13px;color:#4c4948} [data-theme='dark'] #momo-qr-box{background:rgba(28,28,28,0.97)} [data-theme='dark'] #momo-qr-box .t{color:rgba(255,255,255,0.8)} /* 鼠标点击特效：紫罗兰涟漪从点击点扩散消失（不挡点击、不打扰） */ .momo-ripple{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+  border:2px solid rgba(139,92,246,0.9);box-shadow:0 0 12px rgba(167,139,250,0.75);
+  pointer-events:none;z-index:9999;animation:momo-ripple 0.7s ease-out forwards}
+.momo-ripple::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;
+  margin:-3px 0 0 -3px;border-radius:50%;background:rgba(192,132,252,0.95)}
+@keyframes momo-ripple{from{transform:scale(0.3);opacity:1}to{transform:scale(3.6);opacity:0}} /* 鼠标指针：指针本身是更小的实心紫点（CSS 指针图片，零延迟、无白边）
+   JS 只在它底下垫一层半透明圆当背景光晕（系数 1 = 实时跟随） */
+html,body,body *{cursor:url(/img/cursor-dot.png) 8 8,auto !important} a,button,.social-icon,summary,label,[role="button"],#nav a,#nav .site-page, #rightside button,#momo-music-btn,#card-info-btn{
+  cursor:url(/img/cursor-link.png) 11 11,pointer !important}
+input,textarea{cursor:text !important} #momo-halo{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+  background:rgba(139,92,246,0.2);border:0 none;box-shadow:none;
+  pointer-events:none;z-index:9998;opacity:0;will-change:transform;transition:opacity 0.25s}
+#momo-halo.on{opacity:1} /* ===== 文章页：相关推荐 / 上一篇下一篇 / 版权声明 ===== */ /* 1) 卡片改成站点同款玻璃卡（原来黑底 + 0.4 透明度蓝封面 + 浅灰字，亮壁纸上又暗又糊） */ .pagination-related, .relatedPosts > .relatedPosts-list > a{
+  background:rgba(255,255,255,0.52);border:1px solid rgba(139,92,246,0.32);
+  border-radius:12px;overflow:hidden;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+.pagination-related:hover, .relatedPosts > .relatedPosts-list > a:hover{
+  background:rgba(255,255,255,0.64);transform:translateY(-3px);
+  box-shadow:0 12px 26px -12px rgba(91,33,182,0.6)}
+.pagination-related .cover{display:none} .pagination-related .info .info-1, .pagination-related .info .info-2{padding:16px 22px;color:var(--font-color)} .pagination-related .info .info-1 .info-item-1{color:#6d28d9;font-weight:700;letter-spacing:1px} .pagination-related .info .info-1 .info-item-2{color:var(--text-highlight-color);font-weight:600;line-height:1.5} .pagination-related .info .info-2 .info-item-1{color:var(--font-color)} [data-theme='dark'] .pagination-related, [data-theme='dark'] .relatedPosts > .relatedPosts-list > a{
+  background:rgba(30,30,30,0.52);border-color:rgba(167,139,250,0.28)}
+[data-theme='dark'] .pagination-related .info .info-1 .info-item-1{color:#c4b5fd} [data-theme='dark'] .pagination-related .info .info-1 .info-item-2{color:rgba(255,255,255,0.92)} /* 2) 版权声明（含"文章作者"）：玻璃卡 + 深紫标签（原来浅蓝标签 + 浅灰边框） */ #post .post-copyright{
+  background:rgba(255,255,255,0.55);border:1px solid rgba(139,92,246,0.32);
+  border-left:3px solid #7c3aed;border-radius:10px;padding:12px 18px;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#post .post-copyright .post-copyright-meta{color:#5b21b6} #post .post-copyright .post-copyright-info{color:var(--font-color)} #post .post-copyright .post-copyright-info a{color:#5b21b6} #post .post-copyright:before{color:#7c3aed} [data-theme='dark'] #post .post-copyright{
+  background:rgba(30,30,30,0.55);border-color:rgba(167,139,250,0.28)}
+[data-theme='dark'] #post .post-copyright .post-copyright-meta, [data-theme='dark'] #post .post-copyright .post-copyright-info a{color:#c4b5fd} /* ===== 目录（TOC）：把蓝色高亮条换成紫罗兰玻璃风 ===== */ #aside-content #card-toc .toc-content .toc-link{
+  border-radius:7px;color:var(--font-color);transition:all 0.2s ease-in-out}
+#aside-content #card-toc .toc-content .toc-link:hover{
+  color:#6d28d9;background:rgba(139,92,246,0.1)}
+#aside-content #card-toc .toc-percentage{
+  color:#6d28d9;font-style:normal;font-weight:600}
+#aside-content #card-toc .toc-content > * > .toc-item > .toc-child{
+  border-left-color:rgba(139,92,246,0.28)}
+[data-theme='dark'] #aside-content #card-toc .toc-content .toc-link:hover{color:#c4b5fd} [data-theme='dark'] #aside-content #card-toc .toc-percentage{color:#c4b5fd} /* 公告卡片图标：把主题那个一直晃动的喇叭换成彩色 emoji（不晃、更讨喜） */ #card-announcement .item-headline .momo-announce-icon, .card-announcement .item-headline .momo-announce-icon{
+  font-size:1.15em;line-height:1;vertical-align:-2px;margin-left:0;display:inline-block}
+/* 友链卡片：补玻璃底 + 文字加深（原来没底色、中灰字，压在亮壁纸上发虚） */ .container .flink .flink-list > .flink-list-item{
+  background:rgba(255,255,255,0.55) !important;
+  border:1px solid rgba(139,92,246,0.28);border-radius:12px;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+.container .flink .flink-list > .flink-list-item:hover{
+  background:rgba(255,255,255,0.68) !important;transform:translateY(-3px);
+  box-shadow:0 12px 26px -12px rgba(91,33,182,0.55)}
+.container .flink .flink-list > .flink-list-item:before{background:transparent !important} .container .flink .flink-item-name{
+  color:var(--text-highlight-color) !important;font-weight:700}
+.container .flink .flink-item-desc{color:#33333d !important;font-weight:500} .container .flink .flink-item-name:hover,.container .flink .flink-item-desc:hover{color:#6d28d9 !important} [data-theme='dark'] .container .flink .flink-list > .flink-list-item{
+  background:rgba(30,30,30,0.5) !important;border-color:rgba(167,139,250,0.26)}
+[data-theme='dark'] .container .flink .flink-item-name{color:rgba(255,255,255,0.95) !important} [data-theme='dark'] .container .flink .flink-item-desc{color:rgba(255,255,255,0.75) !important} </style><meta name="generator" content="Hexo 8.1.1"></head><body><div class="bg-animation" id="web_bg" style="background-image: url(/img/index.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">29</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">13</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 个人简介</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 个人简介</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="page-site-info"><h1 id="site-title">路径跟踪</h1></div></header><main class="layout" id="content-inner"><div id="tag"><div class="article-sort-title">标签 - 路径跟踪</div><div class="article-sort"><div class="article-sort-item year">2026</div><div class="article-sort-item no-article-cover"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2026-10-04T14:22:36.000Z" title="发表于 2026-10-04 22:22:36">2026-10-04</time></div><a class="article-sort-item-title" href="/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/" title="常见路径规划算法与跟踪">常见路径规划算法与跟踪</a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">29</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">13</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>前往小窝</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/" title="常见路径规划算法与跟踪">常见路径规划算法与跟踪</a><time datetime="2026-10-04T14:22:36.000Z" title="发表于 2026-10-04 22:22:36">2026-10-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/01/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/06%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0+%E8%AF%AF%E5%B7%AE%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2SLAM%E5%BB%BA%E5%9B%BE%E6%96%B9%E6%B3%95/" title="稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法">稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法</a><time datetime="2026-08-01T02:21:42.000Z" title="发表于 2026-08-01 10:21:42">2026-08-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/15/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/05%E4%BC%A0%E7%BB%9F%E6%96%B9%E6%B3%95%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%87%AA%E4%B8%BB%E6%8E%A2%E7%B4%A2/" title="传统方法机器人未知环境自主探索">传统方法机器人未知环境自主探索</a><time datetime="2026-04-14T23:21:05.000Z" title="发表于 2026-04-15 07:21:05">2026-04-15</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/01/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/04bevformer/" title="BEVformer">BEVformer</a><time datetime="2026-04-01T00:21:05.000Z" title="发表于 2026-04-01 08:21:05">2026-04-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/03FPN%E7%89%B9%E5%BE%81%E8%9E%8D%E5%90%88/" title="FPN特征融合">FPN特征融合</a><time datetime="2026-03-30T00:21:05.000Z" title="发表于 2026-03-30 08:21:05">2026-03-30</time></div></div></div></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/%E5%A4%9A%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%BB%BA%E5%9B%BE/" style="font-size: 1.1em; color: #999">多机器人建图</a> <a href="/tags/%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA/" style="font-size: 1.1em; color: #999">路径跟踪</a> <a href="/tags/%E6%BB%A4%E6%B3%A2%E5%99%A8/" style="font-size: 1.1em; color: #999">滤波器</a> <a href="/tags/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/" style="font-size: 1.1em; color: #999">路径规划</a> <a href="/tags/%E8%A7%86%E8%A7%89%E8%AF%86%E5%88%AB/" style="font-size: 1.3em; color: #99a1ac">视觉识别</a> <a href="/tags/%E8%87%AA%E4%B8%BB%E5%BB%BA%E5%9B%BE/" style="font-size: 1.1em; color: #999">自主建图</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89/" style="font-size: 1.4em; color: #99a5b6">计算机视觉</a> <a href="/tags/%E7%82%B9%E4%BA%91%E5%A4%84%E7%90%86/" style="font-size: 1.3em; color: #99a1ac">点云处理</a> <a href="/tags/%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/" style="font-size: 1.3em; color: #99a1ac">全局路径规划</a> <a href="/tags/%E5%A4%9A%E6%9C%BA%E5%99%A8%E4%BA%BA%E4%BB%BB%E5%8A%A1%E5%88%86%E9%85%8D/" style="font-size: 1.1em; color: #999">多机器人任务分配</a> <a href="/tags/SLAM/" style="font-size: 1.4em; color: #99a5b6">SLAM</a> <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" style="font-size: 1.5em; color: #99a9bf">深度学习</a> <a href="/tags/%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/" style="font-size: 1.2em; color: #999da3">局部路径规划</a></div></div><div class="card-widget card-archives">
+    <div class="item-headline">
+      <i class="fas fa-archive"></i>
+      <span>归档</span>
+      
+    </div>
+  
+    <ul class="card-archive-list">
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/10/">
+            <span class="card-archive-list-date">
+              十月 2026
+            </span>
+            <span class="card-archive-list-count">1</span>
+          </a>
+        </li>
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/08/">
+            <span class="card-archive-list-date">
+              八月 2026
+            </span>
+            <span class="card-archive-list-count">1</span>
+          </a>
+        </li>
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/04/">
+            <span class="card-archive-list-date">
+              四月 2026
+            </span>
+            <span class="card-archive-list-count">2</span>
+          </a>
+        </li>
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/03/">
+            <span class="card-archive-list-date">
+              三月 2026
+            </span>
+            <span class="card-archive-list-count">25</span>
+          </a>
+        </li>
+      
+    </ul>
+  </div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script>(function(){try{if(window.innerWidth<=768)return;if(navigator.connection&&navigator.connection.saveData)return;if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;var v=document.createElement('video');v.id='bg-video';v.autoplay=true;v.muted=true;v.loop=true;v.defaultMuted=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.setAttribute('preload','auto');var s=document.createElement('source');s.src='/img/wallpaper.mp4';s.type='video/mp4';v.appendChild(s);v.addEventListener('canplay',function(){var p=v.play();if(p&&p.catch)p.catch(function(){})});document.body.insertBefore(v,document.body.firstChild)}catch(e){}})();</script><script> (function(){ function setup(){ if(document.getElementById('momo-music-btn')){return true} var a=document.createElement('audio'); a.id='momo-bgm';a.src='/music/1.mp3';a.loop=true;a.preload='auto';a.volume=0.6; document.body.appendChild(a); var b=document.createElement('button'); b.id='momo-music-btn';b.type='button';b.title='背景音乐：被神明写的歌 - K.D'; b.innerHTML='<img src="/music/wangyiyun.webp" alt="背景音乐">'; document.body.appendChild(b); var skip=0,byButton=0; function T(){try{return sessionStorage.getItem('momo-bgm')}catch(e){return null}} function S(k,v){try{sessionStorage.setItem(k,v)}catch(e){}} function unlock(){ document.removeEventListener('click',unlock,true); document.removeEventListener('keydown',unlock,true); document.removeEventListener('touchstart',unlock,true); document.removeEventListener('scroll',unlock,true); a.muted=false;b.title='背景音乐：被神明写的歌 - K.D';skip=1;setTimeout(function(){skip=0},500); if(a.paused){var p=a.play();if(p&&p.catch){p.catch(function(){})}}} function armUnlock(){ b.title='已静音自动播放 · 点/滑一下开启声音'; document.addEventListener('click',unlock,true); document.addEventListener('keydown',unlock,true); document.addEventListener('touchstart',unlock,true); document.addEventListener('scroll',unlock,true)} function tryAuto(){ if(T()==='0'){return} try{ var p=a.play(); if(p&&p.catch){p.catch(function(){a.muted=true;var m=a.play();if(m&&m.catch){m.catch(function(){})}armUnlock()})} }catch(e){}} b.addEventListener('click',function(){ if(skip){return} if(a.paused){var p=a.play();if(p&&p.catch){p.catch(function(){})}} else if(a.muted){unlock()} else{byButton=1;a.pause()}}); a.addEventListener('play',function(){b.classList.add('playing');S('momo-bgm','1')}); a.addEventListener('pause',function(){b.classList.remove('playing');S('momo-bgm',byButton?'0':'1');byButton=0}); a.addEventListener('loadedmetadata',function(){ try{var t=parseFloat(sessionStorage.getItem('momo-bgm-t'));if(t>1&&T()!=='0'){a.currentTime=t}}catch(e){}}); setInterval(function(){if(!a.paused){S('momo-bgm-t',String(a.currentTime))}},2000); window.momoMusic={audio:a,btn:b,unlock:unlock}; tryAuto(); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ function setup(){ var box=document.querySelector('#aside-content .card-info .card-info-social-icons'); if(!box||document.getElementById('momo-qr-mask')){return !!box} var items=[ {icon:'fab fa-weixin',label:'微信',img:'/img/weixin.jpeg'}, {icon:'fab fa-qq',label:'QQ',img:'/img/qq.jpeg'}, {icon:'fab fa-bilibili',label:'Bilibili',url:'https://space.bilibili.com/512875452'}]; var mask=document.createElement('div'); mask.id='momo-qr-mask'; mask.innerHTML='<div id="momo-qr-box"><img id="momo-qr-img" alt="二维码"><div class="t" id="momo-qr-t"></div></div>'; document.body.appendChild(mask); var img=document.getElementById('momo-qr-img'),tt=document.getElementById('momo-qr-t'); function close(){mask.classList.remove('show')} mask.addEventListener('click',close); document.addEventListener('keydown',function(e){if(e.key==='Escape'){close()}}); items.forEach(function(it){ var a=document.createElement('a'); a.className='social-icon';a.innerHTML='<i class="'+it.icon+'"></i>'; if(it.url){a.href=it.url;a.target='_blank';a.rel='noopener';a.title=it.label} else{a.href='javascript:void(0)';a.title=it.label+' 二维码'; a.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); img.src=it.img;tt.textContent=it.label+' · 点击任意处关闭';mask.classList.add('show')})} box.appendChild(a)}); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ document.addEventListener('click',function(e){ var d=document.createElement('span'); d.className='momo-ripple'; d.style.left=e.clientX+'px';d.style.top=e.clientY+'px'; document.body.appendChild(d); setTimeout(function(){if(d.parentNode){d.parentNode.removeChild(d)}},700); },{passive:true}); })(); </script><script> (function(){ if(!window.matchMedia||!window.matchMedia('(hover: hover) and (pointer: fine)').matches){return} var d=document.createElement('div'); d.id='momo-halo'; document.body.appendChild(d); function set(e){ if(!d.classList.contains('on')){d.classList.add('on')} d.style.transform='translate3d('+e.clientX+'px,'+e.clientY+'px,0)'} document.addEventListener('pointerrawupdate',set,{passive:true}); document.addEventListener('mousemove',set,{passive:true}); document.addEventListener('mouseleave',function(){d.classList.remove('on')}); })(); </script><script> (function(){ function isDark(){return document.documentElement.getAttribute('data-theme')==='dark'} function paint(){ var dark=isDark(); var links=document.querySelectorAll('#card-toc .toc-link'); for(var i=0;i<links.length;i++){ var el=links[i],on=el.classList.contains('active'); if(on){ el.style.setProperty('background',dark?'rgba(167,139,250,0.2)':'rgba(139,92,246,0.18)','important'); el.style.setProperty('color',dark?'#ddd6fe':'#5b21b6','important'); el.style.setProperty('font-weight','600','important'); el.style.setProperty('box-shadow','inset 3px 0 0 '+(dark?'#a78bfa':'#7c3aed'),'important')} else{ el.style.removeProperty('background');el.style.removeProperty('color'); el.style.removeProperty('font-weight');el.style.removeProperty('box-shadow')}}} var raf=0; function schedule(){if(raf){return}raf=requestAnimationFrame(function(){raf=0;paint()})} document.addEventListener('scroll',schedule,{passive:true}); window.addEventListener('load',function(){paint();setInterval(paint,800)}); })(); </script><script> (function(){ var ICON='📋'; function setup(){ var i=document.querySelector('.card-announcement .item-headline i, #card-announcement .item-headline i'); if(!i||document.querySelector('.momo-announce-icon')){return !!i} var s=document.createElement('span'); s.className='momo-announce-icon'; s.textContent=ICON; i.parentNode.replaceChild(s,i); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ function setup(){ if(document.getElementById('momo-fps')){return true} var d=document.createElement('div'); d.id='momo-fps';d.title='实时帧率'; d.innerHTML='<span id="momo-fps-num">--</span> FPS'; document.body.appendChild(d); var el=document.getElementById('momo-fps-num'),frames=0,t0=0; function tick(ts){ if(!t0){t0=ts} frames++; var dt=ts-t0; if(dt>=500){ var fps=Math.round(frames*1000/dt); el.textContent=fps; if(fps<30){d.classList.add('low')}else{d.classList.remove('low')} frames=0;t0=ts} requestAnimationFrame(tick)} requestAnimationFrame(tick); return true} setup(); })(); </script><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

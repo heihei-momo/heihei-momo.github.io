@@ -1,0 +1,754 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>常见路径规划算法与跟踪 | MoMo</title><meta name="author" content="YinHao Ye"><meta name="copyright" content="YinHao Ye"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="常见路径规划与跟踪算法         通用符号    符号 含义     g 从起点到当前点已经花掉的代价   h 当前点到终点的估计代价   f &#x3D; g + h 总估计代价，越小越优先扩展   OPEN 待扩展节点集合（一般按 f 取最小）   CLOSED 已扩展节点集合   PARENT 父指针，用于回溯路径   rhs 节点的&quot;一步前瞻&quot;g 值，LPA*&#x2F;D* 系专用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="常见路径规划算法与跟踪">
+<meta property="og:url" content="https://heihei-momo.github.io/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/index.html">
+<meta property="og:site_name" content="MoMo">
+<meta property="og:description" content="常见路径规划与跟踪算法         通用符号    符号 含义     g 从起点到当前点已经花掉的代价   h 当前点到终点的估计代价   f &#x3D; g + h 总估计代价，越小越优先扩展   OPEN 待扩展节点集合（一般按 f 取最小）   CLOSED 已扩展节点集合   PARENT 父指针，用于回溯路径   rhs 节点的&quot;一步前瞻&quot;g 值，LPA*&#x2F;D* 系专用">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://heihei-momo.github.io/img/avatar.jpg">
+<meta property="article:published_time" content="2026-10-04T14:22:36.000Z">
+<meta property="article:modified_time" content="2026-10-04T14:24:05.392Z">
+<meta property="article:author" content="YinHao Ye">
+<meta property="article:tag" content="全局路径规划">
+<meta property="article:tag" content="局部路径规划">
+<meta property="article:tag" content="路径跟踪">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://heihei-momo.github.io/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "常见路径规划算法与跟踪",
+  "url": "https://heihei-momo.github.io/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/",
+  "image": "https://heihei-momo.github.io/img/avatar.jpg",
+  "datePublished": "2026-10-04T14:22:36.000Z",
+  "dateModified": "2026-10-04T14:24:05.392Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "YinHao Ye",
+      "url": "https://heihei-momo.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://heihei-momo.github.io/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-kuaile@5.3.0/index.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '常见路径规划算法与跟踪',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><style> #site-title,#site-subtitle,.site-name,#aside-content .author-info-name{font-weight:400} #page-header #site-title{font-size:clamp(3.4rem,8vw,5.4rem)} #page-header #site-subtitle{font-size:clamp(1.6rem,3.8vw,2.9rem)} /* 卡片半透明：正文列 / 文章列表 / 侧栏 widget / 分页 / 文章容器 都用的 --card-bg */ :root{--card-bg:rgba(255,255,255,0.6)} [data-theme='dark']{--card-bg:rgba(18,18,18,0.6)} /* 首页横幅不加任何压暗（保持壁纸原亮度），靠文字阴影保证标题可读 */ #page-header.full_page:before{background:transparent} /* 壁纸偏亮，用文字阴影保证站名/副标题清晰（不靠压暗整片） */ #page-header #site-title,#page-header #site-subtitle{text-shadow:0 0 3px rgba(0,0,0,0.45),0 2px 12px rgba(0,0,0,0.5)} /* 页脚不再自带图片与遮罩，让整页壁纸连续到底（消除底部那条"截断"暗带） */ #footer{background-color:transparent} #footer:before{background-color:transparent} /* 顶部导航栏：淡玻璃悬浮条（左右留边、更透明） */ #nav{
+  left:12px;right:12px;
+  width:auto;
+  margin:8px 0 0;
+  padding:0 26px;
+  background:rgba(255,255,255,0.26);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.28);
+  border-radius:14px;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,0.3);
+} /* 菜单（首页 / 个人简介）在栏目内水平居中；左上角 MoMo 保持原位 */ #nav #menus{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)} /* 栏目条上改用深色文字（原来压在壁纸上的浅灰字看不清） */ #nav a,#nav span.site-page,#nav #blog-info,#nav #toggle-menu{color:var(--font-color);text-shadow:none} #nav a:hover,#nav span.site-page:hover,#nav #toggle-menu:hover{color:#73a2fa} #nav .site-name{text-shadow:none} /* 滚动后的固定状态同样保持透明；并补偿 8px 上边距（隐藏动画按 60px 高度算） */ #page-header.nav-fixed #nav{top:-68px;background:rgba(255,255,255,0.32)} #page-header.not-top-img #nav{background:rgba(255,255,255,0.32)} [data-theme='dark'] #nav, [data-theme='dark'] #page-header.nav-fixed > #nav, [data-theme='dark'] #page-header.not-top-img > #nav{background:rgba(18,18,18,0.42);border-color:rgba(255,255,255,0.10)} /* 导航栏字体整体放大（基准字号改 16px 后按 1.66em 保持原视觉大小） */ #nav{font-size:1.66em} #nav .site-page{font-size:0.95em} #nav #blog-info .site-name{font-size:1.05em} #sidebar #sidebar-menus .menus_items .site-page{font-size:1.3em} /* 侧栏作者卡的统计里去掉「分类」入口，只留 文章 / 标签 */ #aside-content .site-data > a[href$="categories/"]{display:none} /* 首页文章列表：规整两列网格，所有卡片尺寸完全一致，右缘落在侧栏列边界上 */ #recent-posts .recent-post-items{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:22px;
+  align-items:stretch;
+} #recent-posts .recent-post-item{
+  display:block;
+  width:auto;
+  min-width:0;
+  margin-bottom:0;
+  height:275px;
+  border-radius:18px;
+} #recent-posts .recent-post-item > .recent-post-info{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .content{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .article-title{min-width:0} #recent-posts .recent-post-item > .recent-post-info > .article-title{font-size:1.75em;line-height:1.45} #recent-posts .recent-post-item > .recent-post-info > .article-meta-wrap{
+  font-size:1em;margin:10px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+} #recent-posts .recent-post-item > .recent-post-info > .content{font-size:1.05em;line-height:1.8} @media screen and (max-width:768px){
+  #recent-posts .recent-post-items{grid-template-columns:1fr;gap:18px}
+  #recent-posts .recent-post-item{height:auto;min-height:220px}
+} /* 内容区加宽：把左右两边的空白利用起来（主题默认 max-width 只有 1200px） */ .layout, .layout.hide-aside{max-width:1800px} @media screen and (min-width:769px){
+  #page-header #post-info > *{max-width:1800px}
+} /* ===== 开头文字特效 ===== */ /* MoMo：纯白 + 柔和呼吸光晕 + 入场浮现（不用彩色流光） */ #page-header #site-title{
+  color:#fff;
+  text-shadow:none;
+  animation:momo-in .9s cubic-bezier(.22,1,.36,1) both,momo-glow 4.5s ease-in-out infinite;
+} @keyframes momo-glow{
+  0%,100%{filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(255,255,255,.15))}
+  50%{filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(170,220,255,.45))}
+} @keyframes momo-in{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}} /* 副标题：入场 + 呼吸光晕（保留暗影保证在亮壁纸上可读） */ #page-header #site-subtitle{
+  animation:sub-in 1s .3s cubic-bezier(.22,1,.36,1) both,sub-glow 3.6s ease-in-out infinite;
+} @keyframes sub-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}} @keyframes sub-glow{
+  0%,100%{text-shadow:0 0 3px rgba(0,0,0,.5),0 2px 12px rgba(0,0,0,.55)}
+  50%{text-shadow:0 0 3px rgba(0,0,0,.5),0 2px 12px rgba(0,0,0,.55),0 0 22px rgba(125,211,252,.85)}
+} /* 打字机光标：白色（继承副标题的暗影，亮壁纸上也清晰） */ #page-header #site-subtitle .typed-cursor{color:#fff;font-size:.9em} /* ===== 动态壁纸（零资源版）：整页壁纸极缓呼吸缩放 ===== */ #web_bg,#web_bg.bg-animation{animation:to_show 4s,wallpaper-breathe 26s ease-in-out infinite alternate;will-change:transform} @keyframes wallpaper-breathe{from{transform:scale(1)}to{transform:scale(1.07)}} /* 横幅全部改成透明，让壁纸/视频一直贯到顶部（否则横幅的静态图会盖住视频） */ #page-header{background-color:transparent !important;background-image:none !important} /* 视频壁纸图层（桌面端由底部脚本注入 <video id="bg-video">，在 #web_bg 之上、内容之下） */ #bg-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-998;pointer-events:none} /* 尊重系统"减少动态效果"设置：只保留淡入，不做缩放 */ @media (prefers-reduced-motion: reduce){
+  #web_bg,#web_bg.bg-animation{animation:to_show 4s}
+} /* 桌面端：右侧栏与正文列对调，把侧栏放到最左边（手机端不受影响，仍是文章在上） */ @media screen and (min-width:901px){
+  #aside-content{order:-1;padding-left:0;padding-right:15px}
+} /* 侧栏标签云：主题按热度给的是 #999~#99a9bf 浅灰（内联写死），半透明卡片上发虚
+   —— 覆盖成正常文字色（暗色模式会自动跟随），字号分档保留，悬停仍变蓝 */
+#aside-content .card-tag-cloud a{color:var(--font-color) !important} /* 背景音乐：左下角悬浮圆钮（网易云图标），播放中带一圈呼吸光环 */ #momo-music-btn{position:fixed;left:18px;bottom:18px;z-index:100;width:42px;height:42px;padding:0;
+  display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;
+  -webkit-box-pack:center;justify-content:center;cursor:pointer;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.28);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:0 6px 16px -8px rgba(0,0,0,0.4);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+#momo-music-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 10px 22px -8px rgba(0,0,0,0.5)} #momo-music-btn img{width:68%;height:68%;object-fit:contain;display:block;border-radius:50%;pointer-events:none} #momo-music-btn.playing{background:rgba(255,255,255,0.5)} #momo-music-btn.playing::after{content:'';position:absolute;left:-4px;top:-4px;right:-4px;bottom:-4px;
+  border-radius:50%;border:2px solid rgba(115,162,250,0.8);animation:momo-music-ring 1.6s ease-out infinite}
+@keyframes momo-music-ring{0%{transform:scale(0.86);opacity:0.9}100%{transform:scale(1.28);opacity:0}} [data-theme='dark'] #momo-music-btn{background:rgba(18,18,18,0.5);border-color:rgba(255,255,255,0.14)} @media screen and (max-width:768px){#momo-music-btn{left:14px;bottom:14px;width:38px;height:38px}} /* 实时 FPS 读数：右下角常驻小药丸（玻璃质感、不挡点击、数字等宽不跳动） */ #momo-fps{position:fixed;right:62px;bottom:46px;z-index:100;pointer-events:none;
+  padding:3px 9px;border-radius:9px;font-size:11px;font-weight:600;letter-spacing:0.3px;
+  font-variant-numeric:tabular-nums;line-height:1.2;
+  background:rgba(255,255,255,0.26);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.3);color:var(--font-color);opacity:0.8}
+[data-theme='dark'] #momo-fps{background:rgba(18,18,18,0.45);border-color:rgba(255,255,255,0.12)} #momo-fps.low{color:#d32f2f} @media screen and (max-width:768px){#momo-fps{right:52px;bottom:46px;font-size:10px}} /* 作者卡按钮：偏紫渐变 + 流光流动 + 呼吸光晕 + 悬停箭头（文字在配置里是"前往小窝"） */ #aside-content .card-info #card-info-btn{
+  position:relative;overflow:hidden;color:#fff;border-radius:9px;font-weight:600;letter-spacing:1px;
+  background:linear-gradient(120deg,#7c5cff 0%,#a78bfa 45%,#c084fc 100%);background-size:220% 220%;
+  text-shadow:0 1px 2px rgba(76,29,149,0.35);
+  animation:momo-nest-flow 7s ease-in-out infinite,momo-nest-glow 3.6s ease-in-out infinite;
+  transition:transform 0.3s,box-shadow 0.3s}
+#aside-content .card-info #card-info-btn:hover{
+  background:linear-gradient(120deg,#8b5cf6 0%,#a78bfa 45%,#c084fc 100%) !important;
+  transform:translateY(-2px) scale(1.02)}
+#aside-content .card-info #card-info-btn span::after{
+  content:' 🚗';display:inline-block;transition:transform 0.3s;opacity:0.95}
+#aside-content .card-info #card-info-btn:hover span::after{transform:translateX(6px)} @keyframes momo-nest-flow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}} @keyframes momo-nest-glow{
+  0%,100%{box-shadow:0 6px 18px -8px rgba(139,92,246,0.75)}
+  50%{box-shadow:0 9px 26px -6px rgba(167,139,250,1)}}
+/* 二维码弹窗：点社交图标（微信/QQ/B站）弹出对应二维码，点任意处或 Esc 关闭 */ #momo-qr-mask{position:fixed;left:0;top:0;right:0;bottom:0;z-index:200;display:none;
+  -webkit-box-align:center;align-items:center;-webkit-box-pack:center;justify-content:center;
+  background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#momo-qr-mask.show{display:-webkit-box;display:flex} #momo-qr-box{background:rgba(255,255,255,0.97);padding:14px 14px 10px;border-radius:14px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.35);text-align:center;max-width:86vw}
+#momo-qr-box img{display:block;max-width:min(320px,70vw);max-height:66vh;width:auto;height:auto;
+  border-radius:8px;margin:0 auto}
+#momo-qr-box .t{margin-top:9px;font-size:13px;color:#4c4948} [data-theme='dark'] #momo-qr-box{background:rgba(28,28,28,0.97)} [data-theme='dark'] #momo-qr-box .t{color:rgba(255,255,255,0.8)} /* 鼠标点击特效：紫罗兰涟漪从点击点扩散消失（不挡点击、不打扰） */ .momo-ripple{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+  border:2px solid rgba(139,92,246,0.9);box-shadow:0 0 12px rgba(167,139,250,0.75);
+  pointer-events:none;z-index:9999;animation:momo-ripple 0.7s ease-out forwards}
+.momo-ripple::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;
+  margin:-3px 0 0 -3px;border-radius:50%;background:rgba(192,132,252,0.95)}
+@keyframes momo-ripple{from{transform:scale(0.3);opacity:1}to{transform:scale(3.6);opacity:0}} /* 鼠标指针：指针本身是更小的实心紫点（CSS 指针图片，零延迟、无白边）
+   JS 只在它底下垫一层半透明圆当背景光晕（系数 1 = 实时跟随） */
+html,body,body *{cursor:url(/img/cursor-dot.png) 8 8,auto !important} a,button,.social-icon,summary,label,[role="button"],#nav a,#nav .site-page, #rightside button,#momo-music-btn,#card-info-btn{
+  cursor:url(/img/cursor-link.png) 11 11,pointer !important}
+input,textarea{cursor:text !important} #momo-halo{position:fixed;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+  background:rgba(139,92,246,0.2);border:0 none;box-shadow:none;
+  pointer-events:none;z-index:9998;opacity:0;will-change:transform;transition:opacity 0.25s}
+#momo-halo.on{opacity:1} /* ===== 文章页：相关推荐 / 上一篇下一篇 / 版权声明 ===== */ /* 1) 卡片改成站点同款玻璃卡（原来黑底 + 0.4 透明度蓝封面 + 浅灰字，亮壁纸上又暗又糊） */ .pagination-related, .relatedPosts > .relatedPosts-list > a{
+  background:rgba(255,255,255,0.52);border:1px solid rgba(139,92,246,0.32);
+  border-radius:12px;overflow:hidden;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+.pagination-related:hover, .relatedPosts > .relatedPosts-list > a:hover{
+  background:rgba(255,255,255,0.64);transform:translateY(-3px);
+  box-shadow:0 12px 26px -12px rgba(91,33,182,0.6)}
+.pagination-related .cover{display:none} .pagination-related .info .info-1, .pagination-related .info .info-2{padding:16px 22px;color:var(--font-color)} .pagination-related .info .info-1 .info-item-1{color:#6d28d9;font-weight:700;letter-spacing:1px} .pagination-related .info .info-1 .info-item-2{color:var(--text-highlight-color);font-weight:600;line-height:1.5} .pagination-related .info .info-2 .info-item-1{color:var(--font-color)} [data-theme='dark'] .pagination-related, [data-theme='dark'] .relatedPosts > .relatedPosts-list > a{
+  background:rgba(30,30,30,0.52);border-color:rgba(167,139,250,0.28)}
+[data-theme='dark'] .pagination-related .info .info-1 .info-item-1{color:#c4b5fd} [data-theme='dark'] .pagination-related .info .info-1 .info-item-2{color:rgba(255,255,255,0.92)} /* 2) 版权声明（含"文章作者"）：玻璃卡 + 深紫标签（原来浅蓝标签 + 浅灰边框） */ #post .post-copyright{
+  background:rgba(255,255,255,0.55);border:1px solid rgba(139,92,246,0.32);
+  border-left:3px solid #7c3aed;border-radius:10px;padding:12px 18px;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#post .post-copyright .post-copyright-meta{color:#5b21b6} #post .post-copyright .post-copyright-info{color:var(--font-color)} #post .post-copyright .post-copyright-info a{color:#5b21b6} #post .post-copyright:before{color:#7c3aed} [data-theme='dark'] #post .post-copyright{
+  background:rgba(30,30,30,0.55);border-color:rgba(167,139,250,0.28)}
+[data-theme='dark'] #post .post-copyright .post-copyright-meta, [data-theme='dark'] #post .post-copyright .post-copyright-info a{color:#c4b5fd} /* ===== 目录（TOC）：把蓝色高亮条换成紫罗兰玻璃风 ===== */ #aside-content #card-toc .toc-content .toc-link{
+  border-radius:7px;color:var(--font-color);transition:all 0.2s ease-in-out}
+#aside-content #card-toc .toc-content .toc-link:hover{
+  color:#6d28d9;background:rgba(139,92,246,0.1)}
+#aside-content #card-toc .toc-percentage{
+  color:#6d28d9;font-style:normal;font-weight:600}
+#aside-content #card-toc .toc-content > * > .toc-item > .toc-child{
+  border-left-color:rgba(139,92,246,0.28)}
+[data-theme='dark'] #aside-content #card-toc .toc-content .toc-link:hover{color:#c4b5fd} [data-theme='dark'] #aside-content #card-toc .toc-percentage{color:#c4b5fd} /* 公告卡片图标：把主题那个一直晃动的喇叭换成彩色 emoji（不晃、更讨喜） */ #card-announcement .item-headline .momo-announce-icon, .card-announcement .item-headline .momo-announce-icon{
+  font-size:1.15em;line-height:1;vertical-align:-2px;margin-left:0;display:inline-block}
+/* 友链卡片：补玻璃底 + 文字加深（原来没底色、中灰字，压在亮壁纸上发虚） */ .container .flink .flink-list > .flink-list-item{
+  background:rgba(255,255,255,0.55) !important;
+  border:1px solid rgba(139,92,246,0.28);border-radius:12px;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  transition:transform 0.3s,box-shadow 0.3s,background 0.3s}
+.container .flink .flink-list > .flink-list-item:hover{
+  background:rgba(255,255,255,0.68) !important;transform:translateY(-3px);
+  box-shadow:0 12px 26px -12px rgba(91,33,182,0.55)}
+.container .flink .flink-list > .flink-list-item:before{background:transparent !important} .container .flink .flink-item-name{
+  color:var(--text-highlight-color) !important;font-weight:700}
+.container .flink .flink-item-desc{color:#33333d !important;font-weight:500} .container .flink .flink-item-name:hover,.container .flink .flink-item-desc:hover{color:#6d28d9 !important} [data-theme='dark'] .container .flink .flink-list > .flink-list-item{
+  background:rgba(30,30,30,0.5) !important;border-color:rgba(167,139,250,0.26)}
+[data-theme='dark'] .container .flink .flink-item-name{color:rgba(255,255,255,0.95) !important} [data-theme='dark'] .container .flink .flink-item-desc{color:rgba(255,255,255,0.75) !important} </style><meta name="generator" content="Hexo 8.1.1"></head><body><div class="bg-animation" id="web_bg" style="background-image: url(/img/index.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">29</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">13</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 个人简介</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">MoMo</span></a><a class="nav-page-title" href="/"><span class="site-name">常见路径规划算法与跟踪</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 个人简介</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">常见路径规划算法与跟踪</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-10-04T14:22:36.000Z" title="发表于 2026-10-04 22:22:36">2026-10-04</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-10-04T14:24:05.392Z" title="更新于 2026-10-04 22:24:05">2026-10-04</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1>常见路径规划与跟踪算法</h1>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
+  <iframe
+    src="https://player.bilibili.com/player.html?bvid=BV1pdH765EZR&page=1"
+    scrolling="no"
+    border="0"
+    frameborder="no"
+    framespacing="0"
+    allowfullscreen="true"
+    style="position: absolute; width: 100%; height: 100%; left: 0; top: 0;">
+  </iframe>
+</div>
+<h2 id="通用符号">通用符号</h2>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>g</code></td>
+<td>从起点到当前点已经花掉的代价</td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td>当前点到终点的估计代价</td>
+</tr>
+<tr>
+<td><code>f = g + h</code></td>
+<td>总估计代价，越小越优先扩展</td>
+</tr>
+<tr>
+<td><code>OPEN</code></td>
+<td>待扩展节点集合（一般按 <code>f</code> 取最小）</td>
+</tr>
+<tr>
+<td><code>CLOSED</code></td>
+<td>已扩展节点集合</td>
+</tr>
+<tr>
+<td><code>PARENT</code></td>
+<td>父指针，用于回溯路径</td>
+</tr>
+<tr>
+<td><code>rhs</code></td>
+<td>节点的&quot;一步前瞻&quot;<code>g</code> 值，LPA*/D* 系专用</td>
+</tr>
+</tbody>
+</table>
+<p>两大流派：<strong>搜索式</strong>在 51×31 的离散网格上逐格扩展；<strong>采样式</strong>在 50×30 的连续平面上随机撒点、连成树。</p>
+<p>伪代码约定：<code>←</code> 表示赋值，<code>=</code> 表示比较，关键字用英文，行尾 <code>#</code> 为注释。</p>
+<h2 id="搜索式规划">搜索式规划</h2>
+<h3 id="BFS-广度优先搜索-·-bfs-py">BFS 广度优先搜索 · <code>bfs.py</code></h3>
+<p>靠队尾入堆模拟先进先出，逐层扩散，与 DFS 相反。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">BFS(s_start, s_goal):</span><br><span class="line">    PARENT[s_start] ← s_start</span><br><span class="line">    g[s_start] ← 0</span><br><span class="line">    g[s_goal] ← ∞</span><br><span class="line">    OPEN ← 优先队列，压入 (0, s_start)</span><br><span class="line">    CLOSED ← []</span><br><span class="line">    while OPEN ≠ ∅:</span><br><span class="line">        _, s ← OPEN.pop()</span><br><span class="line">        CLOSED.append(s)</span><br><span class="line">        if s = s_goal: break</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            new_cost ← g[s] + cost(s, s_n)</span><br><span class="line">            if s_n ∉ g: g[s_n] ← ∞</span><br><span class="line">            if new_cost &lt; g[s_n]:</span><br><span class="line">                g[s_n] ← new_cost</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                prior ← OPEN 尾元素优先级 + 1      # 插到队尾，近似先进先出</span><br><span class="line">                OPEN.push((prior, s_n))</span><br><span class="line">    return 回溯(PARENT), CLOSED</span><br></pre></td></tr></table></figure>
+<p><strong>概述：首次访问的邻居代价都会初始化为无穷，取起点（访问点）的八领域点，下一步珊格的代价为自身已有代价+到新邻域的欧式距离代价，碰撞代价为无穷，更新邻居点的代价，记录父节点，加入列表队尾。再按顺序弹出最早入队的节点作为访问点，继续八邻域扩散，一直往四周扩散直到遇到终点，回溯路径。</strong></p>
+<h3 id="DFS-深度优先搜索-·-dfs-py">DFS 深度优先搜索 · <code>dfs.py</code></h3>
+<p>新节点插到队首，后进先出，与 BFS 的逐层扩散相反。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">DFS(s_start, s_goal):</span><br><span class="line">    PARENT[s_start] ← s_start</span><br><span class="line">    g[s_start] ← 0</span><br><span class="line">    g[s_goal] ← ∞</span><br><span class="line">    OPEN ← 优先队列，压入 (0, s_start)</span><br><span class="line">    CLOSED ← []</span><br><span class="line">    while OPEN ≠ ∅:</span><br><span class="line">        _, s ← OPEN.pop()</span><br><span class="line">        CLOSED.append(s)</span><br><span class="line">        if s = s_goal: break</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            new_cost ← g[s] + cost(s, s_n)</span><br><span class="line">            if s_n ∉ g: g[s_n] ← ∞</span><br><span class="line">            if new_cost &lt; g[s_n]:</span><br><span class="line">                g[s_n] ← new_cost</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                prior ← OPEN 首元素优先级 - 1      # 插到队首，近似后进先出</span><br><span class="line">                OPEN.push((prior, s_n))</span><br><span class="line">    return 回溯(PARENT), CLOSED</span><br></pre></td></tr></table></figure>
+<p><strong>概述：bfs是先进先出，所以和波浪一样均匀向外传播，dfs其他都一样，但是是后进先出所以不会像波浪，像一根藤蔓沿着一个方向不断生长，直到扩展到终点，再回溯。</strong></p>
+<h3 id="Best-First-最佳优先搜索-·-Best-First-py">Best-First 最佳优先搜索 · <code>Best_First.py</code></h3>
+<p>只按启发值排序，不看已走代价，贪心快但不最优。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">BestFirst(s_start, s_goal):</span><br><span class="line">    PARENT[s_start] ← s_start</span><br><span class="line">    g[s_start] ← 0</span><br><span class="line">    g[s_goal] ← ∞</span><br><span class="line">    OPEN ← 优先队列，压入 (h(s_start), s_start)</span><br><span class="line">    CLOSED ← []</span><br><span class="line">    while OPEN ≠ ∅:</span><br><span class="line">        _, s ← OPEN.pop()</span><br><span class="line">        CLOSED.append(s)</span><br><span class="line">        if s = s_goal: break</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            new_cost ← g[s] + cost(s, s_n)</span><br><span class="line">            if s_n ∉ g: g[s_n] ← ∞</span><br><span class="line">            if new_cost &lt; g[s_n]:                  # g 只用于门控，不入优先级</span><br><span class="line">                g[s_n] ← new_cost</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                OPEN.push((h(s_n), s_n))</span><br><span class="line">    return 回溯(PARENT), CLOSED</span><br></pre></td></tr></table></figure>
+<p><strong>概述：和dfs和bfs的区别是把优先级改为了启发式，曼哈顿距离或者欧式距离作为代价，代价小的放优先级的前面，先取出扩展，直到终点回溯。</strong></p>
+<h3 id="Dijkstra-算法-·-Dijkstra-py">Dijkstra 算法 · <code>Dijkstra.py</code></h3>
+<p>按累计代价 g 扩展，不用启发值，即 h=0 的 A*。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Dijkstra(s_start, s_goal):</span><br><span class="line">    PARENT[s_start] ← s_start</span><br><span class="line">    g[s_start] ← 0</span><br><span class="line">    g[s_goal] ← ∞</span><br><span class="line">    OPEN ← 优先队列，压入 (0, s_start)</span><br><span class="line">    CLOSED ← []</span><br><span class="line">    while OPEN ≠ ∅:</span><br><span class="line">        _, s ← OPEN.pop()                          # 不判 CLOSED，节点可能重复扩展</span><br><span class="line">        CLOSED.append(s)</span><br><span class="line">        if s = s_goal: break</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            new_cost ← g[s] + cost(s, s_n)</span><br><span class="line">            if s_n ∉ g: g[s_n] ← ∞</span><br><span class="line">            if new_cost &lt; g[s_n]:</span><br><span class="line">                g[s_n] ← new_cost</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                OPEN.push((new_cost, s_n))         # 优先级就是 g</span><br><span class="line">    return 回溯(PARENT), CLOSED</span><br></pre></td></tr></table></figure>
+<p><strong>概述：和Best-First的区别是Best-First只计算入队点离终点的曼哈顿作为优先代价，Dijkstra按照代价来排优先级，如果每走一步的代价都完全相同，那么 BFS 和 Dijkstra完全相同。</strong></p>
+<h3 id="A-算法-·-Astar-py">A* 算法 · <code>Astar.py</code></h3>
+<p>按 f=g+h 排序，兼顾已走与剩余代价，比 Dijkstra 扩展少。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">AStar(s_start, s_goal):</span><br><span class="line">    PARENT[s_start] ← s_start</span><br><span class="line">    g[s_start] ← 0</span><br><span class="line">    g[s_goal] ← ∞</span><br><span class="line">    OPEN ← 优先队列，压入 (g[s_start] + h(s_start), s_start)</span><br><span class="line">    CLOSED ← []</span><br><span class="line">    while OPEN ≠ ∅:</span><br><span class="line">        _, s ← OPEN.pop()</span><br><span class="line">        CLOSED.append(s)</span><br><span class="line">        if s = s_goal: break</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            new_cost ← g[s] + cost(s, s_n)         # 碰撞时 cost 为 ∞</span><br><span class="line">            if s_n ∉ g: g[s_n] ← ∞</span><br><span class="line">            if new_cost &lt; g[s_n]:</span><br><span class="line">                g[s_n] ← new_cost</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                OPEN.push((g[s_n] + h(s_n), s_n))</span><br><span class="line">    return 回溯(PARENT), CLOSED</span><br></pre></td></tr></table></figure>
+<p><strong>概述：把Dijkstra的代价变为了g+h，往前走一步的代价+曼哈顿/欧式距离启发式代价（g+h），以代价最小进行扩展，直到到终点再回溯。</strong></p>
+<h3 id="双向-A-·-Bidirectional-a-star-py">双向 A* · <code>Bidirectional_a_star.py</code></h3>
+<p>起点终点同时扩展，两侧相遇即停，比单向 A* 更快。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">BiAStar(s_start, s_goal):</span><br><span class="line">    g_fore[s_start] ← 0, PARENT_fore[s_start] ← s_start</span><br><span class="line">    g_back[s_goal] ← 0, PARENT_back[s_goal] ← s_goal, s_meet ← s_start</span><br><span class="line">    OPEN_fore.push((h(s_start, s_goal), s_start))</span><br><span class="line">    OPEN_back.push((h(s_goal, s_start), s_goal))</span><br><span class="line">    while OPEN_fore ≠ ∅ and OPEN_back ≠ ∅:         # 两侧都非空才交替扩展</span><br><span class="line">        s_fore ← OPEN_fore.pop()</span><br><span class="line">        if s_fore ∈ PARENT_back: s_meet ← s_fore, break   # 撞上后向标记即相遇</span><br><span class="line">        for s_n ∈ 邻居(s_fore):</span><br><span class="line">            if s_n ∉ g_fore: g_fore[s_n] ← ∞</span><br><span class="line">            new_cost ← g_fore[s_fore] + cost(s_fore, s_n)</span><br><span class="line">            if new_cost &lt; g_fore[s_n]:</span><br><span class="line">                g_fore[s_n] ← new_cost</span><br><span class="line">                PARENT_fore[s_n] ← s_fore</span><br><span class="line">                OPEN_fore.push((g_fore[s_n] + h(s_n, s_goal), s_n))</span><br><span class="line">        s_back ← OPEN_back.pop()</span><br><span class="line">        if s_back ∈ PARENT_fore: s_meet ← s_back, break   # 撞上前向标记即相遇</span><br><span class="line">        for s_n ∈ 邻居(s_back):</span><br><span class="line">            if s_n ∉ g_back: g_back[s_n] ← ∞</span><br><span class="line">            new_cost ← g_back[s_back] + cost(s_back, s_n)</span><br><span class="line">            if new_cost &lt; g_back[s_n]:</span><br><span class="line">                g_back[s_n] ← new_cost</span><br><span class="line">                PARENT_back[s_n] ← s_back</span><br><span class="line">                OPEN_back.push((g_back[s_n] + h(s_n, s_start), s_n))</span><br><span class="line">    return 回溯(s_meet, PARENT_fore) + 回溯(s_meet, PARENT_back)   # 起点→相遇点→终点</span><br></pre></td></tr></table></figure>
+<p><strong>概述：相当于两个A_star，一个从起点触发，一个从终点触发，都用对方当启发式目标，若两个列表里有重合的点，代表相遇，然后回溯获得完整路径。</strong></p>
+<h3 id="ARA-·-ARAstar-py">ARA* · <code>ARAstar.py</code></h3>
+<p>先用大权重 e 快速出解，再减小 e 反复改进，随时可停。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">ARAStar(s_start, s_goal, e):</span><br><span class="line">    g[s_start] ← 0, g[s_goal] ← ∞, PARENT[s_start] ← s_start</span><br><span class="line">    OPEN ← &#123;s_start: g[s_start] + e * h(s_start)&#125;</span><br><span class="line">    path ← []</span><br><span class="line">    while True:                                    # 外层：权重递减</span><br><span class="line">        while True:                                # 内层：ImprovePath</span><br><span class="line">            s, f_small ← OPEN 中 f 最小者</span><br><span class="line">            if g[s_goal] + e * h(s_goal) ≤ f_small: break   # 不是弹出终点才停</span><br><span class="line">            OPEN.remove(s), CLOSED.add(s)</span><br><span class="line">            for s_n ∈ 邻居(s):</span><br><span class="line">                if s_n ∈ 障碍: continue</span><br><span class="line">                new_cost ← g[s] + cost(s, s_n)</span><br><span class="line">                if s_n ∉ g or new_cost &lt; g[s_n]:</span><br><span class="line">                    g[s_n] ← new_cost, PARENT[s_n] ← s</span><br><span class="line">                    if s_n ∈ CLOSED: INCONS[s_n] ← 0.0     # g 下降导致不一致</span><br><span class="line">                    else: OPEN[s_n] ← g[s_n] + e * h(s_n)</span><br><span class="line">        path.append(回溯(PARENT))</span><br><span class="line">        if update_e() ≤ 1: break                   # 次优下界降到 1 才结束</span><br><span class="line">        e ← e - 0.4</span><br><span class="line">        OPEN ← OPEN ∪ INCONS                       # 不一致节点并回 OPEN</span><br><span class="line">        OPEN ← &#123;s: g[s] + e * h(s) | s ∈ OPEN&#125;     # 按新权重刷新 f</span><br><span class="line">        INCONS ← ∅, CLOSED ← ∅</span><br><span class="line">    return path, visited</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先类似A_star用启发式代价进行扩展，但是给h加了一个系数：f=g+e*h。先把e往大了取，故意把每个候选节点的代价放大，可能提前忽略实际上能产生更优路径的节点，在搜索过程中路径会更快速的朝着目标走，会更快的到达目标，但是是次优解。第一次寻找路径相比A_star会少扩展很多节点。在有一条次优路径后，降低权重e，把之前发现但没重新搜索的节点放回来，重新计算优先级，继续搜索，直到update_e() &lt;=1（根据当前搜索边界的信息，已经没有必要继续进行 e&gt;1 的优化阶段；在满足 ARA_star 的启发式条件时，继续到 e=1 就可以获得最优性保证），结束。</strong></p>
+<p><strong>A_star 适合“我要最终最优解”。ARA_star 适合“我要尽快有一个能用的解，并且有时间就继续优化”。</strong></p>
+<h3 id="LRTA-·-LRTAstar-py">LRTA* · <code>LRTAstar.py</code></h3>
+<p>每轮只扩展 N 个节点，并把学到的 h 值留到下一轮复用。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">searching(s_start):</span><br><span class="line">    init()                                     # 用初始启发式填满全局 h 表</span><br><span class="line">    while True:</span><br><span class="line">        OPEN, CLOSED ← AStar(s_start, N)        # 有界 A* 每轮只扩展 N 个节点</span><br><span class="line">        if OPEN = &quot;FOUND&quot;:</span><br><span class="line">            path.append(CLOSED)</span><br><span class="line">            break                              # 已到终点，结束</span><br><span class="line">        h_value ← iteration(CLOSED)             # 每点取 min(cost + h)，迭代到收敛</span><br><span class="line">        for x ∈ h_value:</span><br><span class="line">            h_table[x] ← h_value[x]             # 学到的 h 写回全局表</span><br><span class="line">        s_start, path_k ← extract_path_in_CLOSE(s_start, h_value)</span><br><span class="line">        path.append(path_k)                     # 沿 h 最小的邻居走到 OPEN 边缘</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先用启发式代价更新一张全局的h表，用A_star更新N步，现在已经有节点表中了，需要更新这些节点的h值，进行迭代，对于当前节点 <code>s</code>，把它所有“下一步能走的邻居”都算一遍“走到邻居的代价 + 邻居到终点的估计代价”，然后取最小值，作为 <code>s</code> 新的 h 值。这一轮更新之后，所有节点的 <code>h</code> 值都没有再发生变化，那么就说明本轮学习已经收敛，可以停止迭代。把学到的 h 值写回全局表，在当前查询点邻域查找，找到表中最小的h值的点作为新一轮的起点，再从起点出发进行扩展，直到找到终点，通过代价找到代价最小的一条路径作为路径。</strong></p>
+<h3 id="RTAA-·-RTAAStar-py">RTAA* · <code>RTAAStar.py</code></h3>
+<p>用 OPEN 的最小 f 值反推 h 表，比 LRTA* 收敛更快。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">searching(s_start):</span><br><span class="line">    init()                                     # 用初始启发式填满全局 h 表</span><br><span class="line">    while True:</span><br><span class="line">        OPEN, CLOSED, g_table, PARENT ← Astar(s_start, N)   # 每轮只扩展 N 个节点</span><br><span class="line">        if OPEN = &quot;FOUND&quot;:</span><br><span class="line">            path.append(CLOSED)</span><br><span class="line">            break                              # 已到终点，结束</span><br><span class="line">        for x ∈ OPEN:</span><br><span class="line">            v_open[x] ← g_table[PARENT[x]] + 1 + h_table[x]  # +1 是源码写死的步长</span><br><span class="line">        s_open ← argmin(v_open)                 # 估计最小的 OPEN 节点</span><br><span class="line">        f_min ← v_open[s_open]</span><br><span class="line">        for x ∈ CLOSED:</span><br><span class="line">            h_value[x] ← f_min - g_table[x]      # 用 f_min 反推 h</span><br><span class="line">            h_table[x] ← h_value[x]              # 写回全局 h 表</span><br><span class="line">        s_start, path_k ← extract_path_in_CLOSE(s_start, s_open, h_value)</span><br><span class="line">        path.append(path_k)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先A_star进行扩展一波，在open列表中找到一个代价最小的节点，将它作为基准（标记点），用 OPEN 中最小的 <code>f</code> 值（标记点）减去每个 CLOSED 节点自己的 <code>g</code> 值（因为希望更新后满足 <code>g+h=f_min</code>），将更新完的h值写回全局 h 表，再从标记点按最大的h（代表g小）回溯路径到上一个起点，然后标记点作为新起点。</strong></p>
+<h3 id="LPA-·-LPAstar-py">LPA* · <code>LPAstar.py</code></h3>
+<p>起点固定，障碍变化时复用 g 与 rhs 做增量重算。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ComputeShortestPath():</span><br><span class="line">    while True:</span><br><span class="line">        s, v ← TopKey()                        # 取 U 中键最小的节点</span><br><span class="line">        if v ≥ CalculateKey(s_goal) and rhs[s_goal] = g[s_goal]:</span><br><span class="line">            break                              # 目标已局部一致则收敛</span><br><span class="line">        U.pop(s)</span><br><span class="line">        if g[s] &gt; rhs[s]:                      # 过一致：rhs 减小</span><br><span class="line">            g[s] ← rhs[s]</span><br><span class="line">        else:                                  # 欠一致：原 g 失效</span><br><span class="line">            g[s] ← ∞</span><br><span class="line">            UpdateVertex(s)</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            UpdateVertex(s_n)                  # 只需重算邻居的 rhs 与键</span><br></pre></td></tr></table></figure>
+<p><strong>概述：LPA*第一次寻找最短路径时，先将起点的 rhs=0 放入OPEN(U)，然后不断从U中取出Key最小的节点进行处理；如果该节点的rhs比当前g更小，就用rhs更新g，并根据这个新的g去更新所有邻居的rhs，把受到影响且g≠rhs的节点重新放入U，这样搜索信息就从起点一层层向目标传播；当目标节点已经满足g=rhs，且U中不存在Key更小、可能继续改善目标的节点时，搜索停止，此时目标的g就代表从起点到目标的最短代价，最后再从目标出发，每次选择g最小的邻居反向回溯到起点，得到完整的最短路径。</strong></p>
+<p><strong>在动态的加入障碍物后，更新受影响的节点，重新计算它们的 rhs和 Key，并将不一致的节点放入 U，先处理U中代价最小的节点，从受影响区域向外传播修复，当目标节点已经达到一致状态 g=rhs，同时 U 中已经没有 Key 比目标更小、能够继续改善目标的节点时，修复结束。</strong></p>
+<p><strong>g      → 当前保存的路径代价</strong><br>
+<strong>rhs    → 根据当前邻居计算出来的“邻居的代价g+到自己的路径代价”</strong><br>
+<strong>U      → g 和 rhs 不一致、需要处理的节点集合</strong></p>
+<h3 id="D-·-D-star-py">D* · <code>D_star.py</code></h3>
+<p>反向搜索，用 k_old 判断 RAISE/LOWER 并重新入队。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">process_state():</span><br><span class="line">    s ← min_state()                            # OPEN 中 k 最小的状态</span><br><span class="line">    if s = None:</span><br><span class="line">        return -1                              # OPEN 为空，搜索失败</span><br><span class="line">    k_old ← get_k_min()</span><br><span class="line">    delete(s)                                  # 移出 OPEN 并置为 CLOSED</span><br><span class="line">    if k_old &lt; h[s]:                           # RAISE：h 上升</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            if h[s_n] ≤ k_old and h[s] &gt; h[s_n] + cost(s_n, s):</span><br><span class="line">                PARENT[s] ← s_n                # 就近改父以降低 h[s]</span><br><span class="line">                h[s] ← h[s_n] + cost(s_n, s)</span><br><span class="line">    if k_old = h[s]:                           # LOWER：h 下降</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            if t[s_n] = &#x27;NEW&#x27; or (PARENT[s_n] = s and h[s_n] ≠ h[s] + cost(s, s_n)) or (PARENT[s_n] ≠ s and h[s_n] &gt; h[s] + cost(s, s_n)):</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                insert(s_n, h[s] + cost(s, s_n))</span><br><span class="line">    else:</span><br><span class="line">        for s_n ∈ 邻居(s):</span><br><span class="line">            if t[s_n] = &#x27;NEW&#x27; or (PARENT[s_n] = s and h[s_n] ≠ h[s] + cost(s, s_n)):</span><br><span class="line">                PARENT[s_n] ← s</span><br><span class="line">                insert(s_n, h[s] + cost(s, s_n))</span><br><span class="line">            else:</span><br><span class="line">                if PARENT[s_n] ≠ s and h[s_n] &gt; h[s] + cost(s, s_n):</span><br><span class="line">                    insert(s, h[s])            # OPEN 中 s 代价下降，需重扩</span><br><span class="line">                else:</span><br><span class="line">                    if PARENT[s_n] ≠ s and h[s] &gt; h[s_n] + cost(s_n, s) and t[s_n] = &#x27;CLOSED&#x27; and h[s_n] &gt; k_old:</span><br><span class="line">                        insert(s_n, h[s_n])    # CLOSED 邻居代价下降，重入队</span><br><span class="line">    return get_k_min()</span><br></pre></td></tr></table></figure>
+<p><strong>概述：从终点开始反向搜索，先将终点放入 OPEN，然后逐步取出代价最小的节点进行处理。处理当前节点 <code>s</code> 时，遍历它的所有可行邻居 <code>s_n</code>，逐个判断邻居的状态，并计算“经过当前节点到达邻居”的代价，即当前节点的 <code>h</code> 值加上 <code>s</code> 到 <code>s_n</code> 的移动代价，再与邻居原来的 <code>h</code> 值进行比较。如果邻居还没有被处理，或者经过当前节点可以得到更小的代价，就将当前节点作为邻居的父节点，更新邻居的 <code>h</code> 值，并将邻居加入 OPEN，使新的代价继续向外传播。这样从终点逐层向外扩展，最终将代价传播到起点，并通过父节点关系得到从起点到终点的最短路径。</strong></p>
+<p><strong>当原来的路径上出现新的障碍物导致部分路径失效时，D_star不需要重新从头搜索，而是对受到影响的节点进行局部修复。算法重新检查受影响节点及其邻居，判断原来的父节点是否仍然可用，并重新比较经过其他邻居的路径代价。如果发现原来的路径代价变大或者路径已经无法通行，就寻找其他能够提供更小代价的邻居作为新的父节点，并更新对应的 <code>h</code> 值；如果某些已经处理过的节点也受到影响，就将它们重新放入 OPEN，让代价变化继续向周围传播。最终只修复受到障碍物变化影响的区域，并重新得到一条可行的最短路径。</strong></p>
+<p><strong>h是一个节点到终点的“当前路径代价”</strong></p>
+<h2 id="采样式规划">采样式规划</h2>
+<h3 id="RRT-·-rrt-py">RRT · <code>rrt.py</code></h3>
+<p>单向随机树，每轮只朝采样点扩一步，不选父不重连。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">RRT(s_start, s_goal, step_len, goal_sample_rate, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;</span><br><span class="line">    for i ← 1 to iter_max:</span><br><span class="line">        x_rand ← 采样(goal_sample_rate)          # 小概率直接取 s_goal，是为了有方向性的往终点延展</span><br><span class="line">        x_near ← 最近邻(V, x_rand)</span><br><span class="line">        x_new ← 朝 x_near 走一步(x_rand, step_len)  #取到goal就会往goal走一步</span><br><span class="line">        if x_new ≠ ∅ and 无碰撞(x_near, x_new):</span><br><span class="line">            V.add(x_new)</span><br><span class="line">            if 距离(x_new, s_goal) ≤ step_len and 无碰撞(x_new, s_goal):</span><br><span class="line">                朝 s_goal 扩展一步(x_new)        # 返回值未用，靠父指针回溯</span><br><span class="line">                return 回溯(x_new)</span><br><span class="line">    return ∅</span><br></pre></td></tr></table></figure>
+<p><strong>概述：已知障碍物，起点，终点。在迭代次数范围内，随机在地图上采样新点，找到距离最近的节点作为旧点，经过碰撞检测后，旧点向新点方向接近一个步长，有一定几率采样点为终点，以此循环直到到达终点，回溯得到路径。</strong></p>
+<h3 id="RRT-Connect-·-rrt-connect-py">RRT-Connect · <code>rrt_connect.py</code></h3>
+<p>双向两棵树贪心对冲，碰头即拼接路径，比 RRT 快。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">RRT_Connect(s_start, s_goal, step_len, goal_sample_rate, iter_max):</span><br><span class="line">    V1 ← &#123;s_start&#125;, V2 ← &#123;s_goal&#125;</span><br><span class="line">    for i ← 1 to iter_max:</span><br><span class="line">        x_rand ← 采样(goal_sample_rate)          # 交换后仍朝 s_goal 偏置</span><br><span class="line">        x_near ← 最近邻(V1, x_rand)</span><br><span class="line">        x_new ← 朝 x_near 走一步(x_rand, step_len)</span><br><span class="line">        if x_new ≠ ∅ and 无碰撞(x_near, x_new):</span><br><span class="line">            V1.add(x_new)</span><br><span class="line">            x_near2 ← 最近邻(V2, x_new)</span><br><span class="line">            x_new2 ← 朝 x_near2 走一步(x_new, step_len)</span><br><span class="line">            if x_new2 ≠ ∅ and 无碰撞(x_near2, x_new2):</span><br><span class="line">                V2.add(x_new2)</span><br><span class="line">                while not 重合(x_new2, x_new):   # connect：连续直冲</span><br><span class="line">                    x_tmp ← 朝 x_new2 走一步(x_new, step_len)</span><br><span class="line">                    if x_tmp = ∅ or 有碰撞(x_new2, x_tmp):</span><br><span class="line">                        break</span><br><span class="line">                    V2.add(x_tmp)</span><br><span class="line">                    x_new2 ← x_tmp               # 游标前移，父指针重建</span><br><span class="line">            if 重合(x_new2, x_new):              # 坐标严格相等才算相遇</span><br><span class="line">                return 回溯拼接(x_new, x_new2)</span><br><span class="line">        if |V2| &lt; |V1|:</span><br><span class="line">            V1 ↔ V2                              # 下一轮扩展更小的树</span><br><span class="line">    return ∅</span><br></pre></td></tr></table></figure>
+<p><strong>概述：已知起点，终点，障碍物，在地图上随机选一个点（有几率选到终点），查找离点最近的起点树节点，起点树节点往选中的点延伸一定的单位，检测无碰撞后选中的点作为起点树的一个新的节点，在终点树中找离这个新节点最近的节点，终点树节点往起点树节点方向延伸一定距离，检测碰撞，若没有碰撞就贪心继续延伸，直到无法前进，如果终点树比起点树短，那么两颗树互换，优先扩展短的树，直到两树相遇，回溯得到完整路径</strong></p>
+<h3 id="Extended-RRT-·-extended-rrt-py">Extended-RRT · <code>extended_rrt.py</code></h3>
+<p>加障碍后重建整棵树，用旧路径路点偏置采样。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">Extended_RRT(s_start, s_goal, step_len, goal_sample_rate, waypoint_sample_rate, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;, waypoint ← ∅</span><br><span class="line">    while True:                                  # 每次点击加障碍后重来</span><br><span class="line">        for i ← 1 to iter_max:</span><br><span class="line">            if waypoint = ∅:</span><br><span class="line">                x_rand ← 采样(goal_sample_rate)          # 首轮只偏置目标</span><br><span class="line">            else:</span><br><span class="line">                x_rand ← 偏置采样(goal_sample_rate, waypoint_sample_rate)   # 目标 / 路点 / 随机；下标误用 len(path)</span><br><span class="line">            x_near ← 最近邻(V, x_rand)</span><br><span class="line">            x_new ← 朝 x_near 走一步(x_rand, step_len)</span><br><span class="line">            if x_new ≠ ∅ and 无碰撞(x_near, x_new):</span><br><span class="line">                V.add(x_new)</span><br><span class="line">                if 距离(x_new, s_goal) ≤ step_len:       # 末段不查碰撞</span><br><span class="line">                    朝 s_goal 扩展一步(x_new)</span><br><span class="line">                    path ← 回溯(x_new)</span><br><span class="line">                    waypoint ← 回溯节点(x_new)</span><br><span class="line">                    break</span><br><span class="line">        if 未点击加障碍():</span><br><span class="line">            return path</span><br><span class="line">        V ← &#123;s_start&#125;                            # 树整个重建，路点保留</span><br></pre></td></tr></table></figure>
+<p><strong>概述：初始规划与rrt相同，但相比于rrt主要是多了重规划部分，地图临时添加障碍物触发重规划，搜索树重置为仅含起点，重规划的采样不再是随机采样，而是按照一定概率分别“朝终点采样”“沿旧路径采样”“随机探索”，随后的步骤与rrt相同（节点搜索、扩展、碰撞检测、到达终点判断）</strong></p>
+<h3 id="Dynamic-RRT-·-dynamic-rrt-py">Dynamic-RRT · <code>dynamic_rrt.py</code></h3>
+<p>保留旧树，标记并剪掉失效枝，只增量续长。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Dynamic_RRT(s_start, s_goal, step_len, goal_sample_rate, waypoint_sample_rate, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;, E ← ∅, waypoint ← ∅</span><br><span class="line">    while True:                                  # 每次点击加障碍后触发</span><br><span class="line">        for i ← 1 to iter_max:</span><br><span class="line">            x_rand ← 采样(goal_sample_rate)       # 重规划时采样含路点偏置</span><br><span class="line">            x_near ← 最近邻(V, x_rand)</span><br><span class="line">            x_new ← 朝 x_near 走一步(x_rand, step_len)</span><br><span class="line">            if x_new ≠ ∅ and 无碰撞(x_near, x_new):</span><br><span class="line">                V.add(x_new), E.add(边(x_near, x_new))</span><br><span class="line">                if 距离(x_new, s_goal) ≤ step_len:</span><br><span class="line">                    朝 s_goal 扩展一步(x_new)</span><br><span class="line">                    path ← 回溯(x_new)</span><br><span class="line">                    waypoint ← 回溯节点(x_new)</span><br><span class="line">                    break</span><br><span class="line">        if 未点击加障碍():</span><br><span class="line">            return path</span><br><span class="line">        for e ∈ E:                               # 只拿新障碍查一次</span><br><span class="line">            if 与圆相交(e.parent, e.child, obs_add):</span><br><span class="line">                e.child.flag ← &quot;INVALID&quot;         # 只标子节点，边不标</span><br><span class="line">        TrimRRT()                                # 父失效则子树全失效，删掉</span><br><span class="line">        if path 上存在失效路点:</span><br><span class="line">            从残树继续生长()                       # 保留有效旧树，只增量续长</span><br></pre></td></tr></table></figure>
+<p><strong>概述：初始规划与rrt相同，相比于rrt主要是多了重规划部分，地图临时添加障碍物触发重规划，在重规划过程中，首先标记被障碍物破坏的节点，如果当前规划出来的路径被障碍物破坏了，就要重新规划路径。首先剔除被破坏的节点，搜索树重置只去掉被破坏的节点，保留其他原有节点，重规划的采样不再是随机采样，而是按照一定概率分别“朝终点采样”“沿旧路径采样”“随机探索”，随后的步骤与rrt相同（节点搜索、扩展、碰撞检测、到达终点判断）</strong></p>
+<h3 id="RRT-·-rrt-star-py">RRT* · <code>rrt_star.py</code></h3>
+<p>RRT 加&quot;选父&quot;和&quot;重连&quot;两步，采样越多路径越接近最优。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">RRT_star(s_start, s_goal, step_len, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;</span><br><span class="line">    for i ← 1 to iter_max:</span><br><span class="line">        x_rand ← 采样()</span><br><span class="line">        x_near ← 最近邻(V, x_rand)</span><br><span class="line">        x_new ← 朝 x_near 走一步(x_rand, step_len)</span><br><span class="line">        if 无碰撞(x_near, x_new):</span><br><span class="line">            X_near ← 半径 r 内的邻居</span><br><span class="line">            x_new.parent ← argmin_&#123;x ∈ X_near&#125; (x.cost + 距离(x, x_new))   # 选父</span><br><span class="line">            V.add(x_new)</span><br><span class="line">            for x ∈ X_near:                    # 重连</span><br><span class="line">                if x_new.cost + 距离(x_new, x) &lt; x.cost:</span><br><span class="line">                    x.parent ← x_new</span><br><span class="line">    return 回溯(离目标最近且可直连的节点)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：已知起点、终点和障碍物，进行随机采样，有概率采样到终点，找到树中离采样点最近的点，进行碰撞检测，无碰撞就查找新节点（新采样点）的邻域，保留半径内且无碰撞的节点，返回符合条件的邻域节点，然后重新选择父节点，选邻域内累计代价（路径长度）最小的父节点，迭代完后，选择可以直达目标点的节点（也就是终点周围的节点），进行碰撞检测，选择代价最小的节点并回溯</strong></p>
+<h3 id="Informed-RRT-·-informed-rrt-star-py">Informed RRT* · <code>informed_rrt_star.py</code></h3>
+<p>找到首条路径后，只在以起点终点为焦点的椭球内采样。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">IRrtStar(s_start, s_goal, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;</span><br><span class="line">    X_soln ← ∅</span><br><span class="line">    c_best ← ∞</span><br><span class="line">    for i ← 1 to iter_max:</span><br><span class="line">        if X_soln ≠ ∅:                             # 有解才更新椭球</span><br><span class="line">            x_best ← X_soln 中 Cost 最小的节点</span><br><span class="line">            c_best ← Cost(x_best)</span><br><span class="line">        x_rand ← 若 c_best = ∞ 则全局采样，否则椭球内采样(c_best)</span><br><span class="line">        x_near ← 最近邻(V, x_rand)</span><br><span class="line">        x_new ← 朝 x_near 走一步(x_rand)</span><br><span class="line">        if x_new and 无碰撞(x_near, x_new):</span><br><span class="line">            X_near ← 近邻(V, x_new)                # 半径 50√(log n/n) 且无碰撞</span><br><span class="line">            V.add(x_new)</span><br><span class="line">            x_new.parent ← X_near 中 Cost + 边长最小的  # 选父</span><br><span class="line">            重连(X_near)                            # 更省则改父</span><br><span class="line">            if 到目标距离 &lt; step_len and 无碰撞(x_new, s_goal):</span><br><span class="line">                X_soln.add(x_new)                  # 下轮迭代才收缩椭球</span><br><span class="line">    return 回溯(x_best)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：在没有存在可行解（能够连接到终点的候选节点集合）的时候，先随机采样，有概率采到终点，查找最近邻节点，朝采样点方向扩展一步，检查碰撞，先当作新节点，并计算代价，查找新节点的近邻集合，遍历近邻挑选更优父节点（代价更小），选的是从哪个点连接到新节点代价最小（选新节点的父节点）。如果其他邻域节点把新节点作为父节点时，比原来的代价低，就重新连接。如果新节点进入终点的距离小于步长，检测碰撞，则把这个新节点作为可行解（能够连接到终点的候选节点集合中的一个解）。当存在可行解的时候（能够连接到终点的候选节点集合），遍历每一个候选解节点，计算它从起点走到这个节点的累计路径代价，选取代价最小的节点，因为代价就是路径长度，在构造椭球子集时，椭球的长轴一定比（起点与终点的距离）长，所以将最小代价作为椭球的长轴，短半轴公式为：</strong></p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>b</mi><mo>=</mo><mfrac><msqrt><mrow><msubsup><mi>c</mi><mrow><mi>b</mi><mi>e</mi><mi>s</mi><mi>t</mi></mrow><mn>2</mn></msubsup><mo>−</mo><msubsup><mi>c</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mn>2</mn><mi>e</mi><mi>n</mi><mi>d</mi></mrow><mn>2</mn></msubsup></mrow></msqrt><mn>2</mn></mfrac></mrow><annotation encoding="application/x-tex">b = \frac{\sqrt{c_{best}^2-c_{start2end}^2}}{2}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">b</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:2.316em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.63em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord">2</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.6977em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9323em;"><span class="svg-align" style="top:-3.2em;"><span class="pstrut" style="height:3.2em;"></span><span class="mord" style="padding-left:1em;"><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.7959em;"><span style="top:-2.3987em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">b</span><span class="mord mathnormal mtight">es</span><span class="mord mathnormal mtight">t</span></span></span></span><span style="top:-3.0448em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.7959em;"><span style="top:-2.3987em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">s</span><span class="mord mathnormal mtight">t</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight" style="margin-right:0.0278em;">r</span><span class="mord mathnormal mtight">t</span><span class="mord mtight">2</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">n</span><span class="mord mathnormal mtight">d</span></span></span></span><span style="top:-3.0448em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3013em;"><span></span></span></span></span></span></span></span></span><span style="top:-2.8923em;"><span class="pstrut" style="height:3.2em;"></span><span class="hide-tail" style="min-width:1.02em;height:1.28em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.28em" viewBox="0 0 400000 1296" preserveAspectRatio="xMinYMin slice"><path d="M263,681c0.7,0,18,39.7,52,119
+c34,79.3,68.167,158.7,102.5,238c34.3,79.3,51.8,119.3,52.5,120
+c340,-704.7,510.7,-1060.3,512,-1067
+l0 -0
+c4.7,-7.3,11,-11,19,-11
+H40000v40H1012.3
+s-271.3,567,-271.3,567c-38.7,80.7,-84,175,-136,283c-52,108,-89.167,185.3,-111.5,232
+c-22.3,46.7,-33.8,70.3,-34.5,71c-4.7,4.7,-12.3,7,-23,7s-12,-1,-12,-1
+s-109,-253,-109,-253c-72.7,-168,-109.3,-252,-110,-252c-10.7,8,-22,16.7,-34,26
+c-22,17.3,-33.3,26,-34,26s-26,-26,-26,-26s76,-59,76,-59s76,-60,76,-60z
+M1001 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.3077em;"><span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
+<p><strong>之后采样点变为在椭球内采样，进行新一轮循环，随着找到更短的路径，最小代价不断减小，椭球也会随之收缩，搜索范围进一步缩小，从而提高路径优化效率。</strong></p>
+<h3 id="RRT-Smart-·-rrt-star-smart-py">RRT*-Smart · <code>rrt_star_smart.py</code></h3>
+<p>找到初始路径后贪心拉直，并在障碍拐角信标处加密采样。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">RrtStarSmart(s_start, s_goal, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;</span><br><span class="line">    beacons ← ∅</span><br><span class="line">    n ← 0                                          # 初始路径出现的迭代号</span><br><span class="line">    InitPathFlag ← False</span><br><span class="line">    obs_vertex ← 展开障碍顶点()</span><br><span class="line">    for k ← 1 to iter_max:</span><br><span class="line">        x_rand ← 若 (k - n) % 2 = 0 and beacons ≠ ∅ 则信标邻域采样，否则全局采样</span><br><span class="line">        x_near ← 最近邻(V, x_rand)</span><br><span class="line">        x_new ← 朝 x_near 走一步(x_rand)</span><br><span class="line">        if x_new and 无碰撞(x_near, x_new):</span><br><span class="line">            X_near ← 近邻(V, x_new)</span><br><span class="line">            V.add(x_new)</span><br><span class="line">            if X_near ≠ ∅:</span><br><span class="line">                x_new.parent ← X_near 中代价最小的   # 选父</span><br><span class="line">                重连(X_near)                        # 更省则改父</span><br><span class="line">            if not InitPathFlag and 到目标距离 &lt; step_len:</span><br><span class="line">                InitPathFlag ← True</span><br><span class="line">                n ← k</span><br><span class="line">            if InitPathFlag:</span><br><span class="line">                路径优化(x_new)                      # 贪心直连，变短才更新信标</span><br><span class="line">    return 回溯(s_goal)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：在没有找到一条能从起点到终点的初始路径时，首先进行带有偏置的全局随机采样，找到最近邻节点，并朝采样点扩散，检查碰撞，将新节点加入树，找新节点的近邻节点，如果存在近邻就选代价最小的近邻为父节点，计算新节点代价，并把周围的节点尝试链接到新节点，如果代价更低就设置为新节点为周围某节点的父节点，如果节点距终点小于步长，就算时找到初始路径。在找到初始路径后，沿着节点往前回溯，如果两个节点直连没有碰上障碍物，就跳过中间节点，将这两个节点直接相连，直到有障碍物阻碍位置，累加代价，就这样继续往前回溯直到回溯到起点，如果代价小于之前算出来的代价（若不是第一次路径回溯），就记录新代价，从终点回溯最优路径，找距离路径节点 3 以内的障碍物顶点，把这些障碍物顶点记录为信标，更新信标集合，只后的全局采样按照周期随机选的信标周围半径的圆形区域内进行，其余迭代仍然进行全局采样，不断优化路径。</strong></p>
+<h3 id="FMT-（快速行进树）-·-fast-marching-trees-py">FMT*（快速行进树） · <code>fast_marching_trees.py</code></h3>
+<p>先批量撒点，再沿代价最小前沿做惰性动态规划。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">FMT(s_start, s_goal, search_radius):</span><br><span class="line">    V_unvisited ← 自由空间均匀采样(1000)            # 含 s_goal</span><br><span class="line">    V ← V_unvisited ∪ &#123;s_start&#125;</span><br><span class="line">    V_open ← &#123;s_start&#125;</span><br><span class="line">    s_start.cost ← 0</span><br><span class="line">    rn ← search_radius * sqrt(log n / n)           # n 为采样规模</span><br><span class="line">    z ← s_start</span><br><span class="line">    while z ≠ s_goal:</span><br><span class="line">        V_open_new ← ∅</span><br><span class="line">        X_near ← 半径 rn 内的未访问邻居(z)</span><br><span class="line">        for x in X_near:</span><br><span class="line">            Y_near ← 半径 rn 内的开集邻居(x)</span><br><span class="line">            y_min ← Y_near 中 y.cost + Cost(y, x) 最小的  # Y_near 空则报错</span><br><span class="line">            if 无碰撞(y_min, x):</span><br><span class="line">                x.parent ← y_min</span><br><span class="line">                x.cost ← y_min.cost + Cost(y_min, x)</span><br><span class="line">                V_open_new.add(x)</span><br><span class="line">                V_unvisited.remove(x)</span><br><span class="line">        V_open ← V_open ∪ V_open_new - &#123;z&#125;         # z 移入闭集</span><br><span class="line">        if V_open = ∅: break                       # 开集空即失败</span><br><span class="line">        z ← V_open 中 cost 最小的节点</span><br><span class="line">    return 回溯(s_goal)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先生成随机自由采样点集合，从起点节点开始，先取未访问集合一定邻域内的采样点，记为邻居点X，记录本次扩展的节点，找到邻居点X在开集中的邻居，即为邻居点Y，计算从起点到邻居点Y的代价加上从邻居点Y到邻居点X的代价（代价小为强者），找到代价最小的节点，检测邻居点X和代价最小点的碰撞，记录该节点为邻居点X的父节点（前驱节点），将该邻居点X加入开集前沿（暂存），将邻居点X从未访问集合中移除，更新邻居点X的累计代价。就这样遍历完所有邻居点X后，把开集前沿中的邻居点X，将本次扩展的节点移出开集，加入闭集合，然后再选择开集合中代价最小的节点继续扩展（通俗的来说就像是一个感染源感染周围一圈的节点，任务完成感染源被耗尽，被感染的节点中的强者作为新的感染源继续去感染周围的节点，然后耗尽，再从没耗尽的感染源中选最强者，以此类推），直到扩展到目标点进行回溯。</strong></p>
+<h3 id="BIT-（批处理知情树）-·-batch-informed-trees-py">BIT*（批处理知情树） · <code>batch_informed_trees.py</code></h3>
+<p>批量采样与启发式队列交替，用椭球约束增量搜索。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">BITStar(s_start, s_goal, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;; X_sample ← &#123;s_goal&#125;</span><br><span class="line">    QV ← QE ← ∅</span><br><span class="line">    g_T ← &#123;s_start: 0, s_goal: ∞&#125;</span><br><span class="line">    初始化椭球(cMin, xCenter, C)</span><br><span class="line">    for k ← 0 to 499:                              # 轮数硬编码，iter_max 未用</span><br><span class="line">        if QV = ∅ and QE = ∅:                      # 队列空则开新批次</span><br><span class="line">            m ← 若 k = 0 则 350 否则 200</span><br><span class="line">            剪枝(g_T[s_goal])                       # 按当前最优代价剪枝</span><br><span class="line">            X_sample ← X_sample ∪ 采样(m, g_T[s_goal], 椭球)</span><br><span class="line">            V_old ← V; QV ← V</span><br><span class="line">        while 顶点队列最优值() ≤ 边队列最优值():</span><br><span class="line">            扩展顶点(顶点队列最优顶点())              # 半径固定 4.0，radius() 未调用</span><br><span class="line">        vm, xm ← 边队列最优边()</span><br><span class="line">        if g_T[vm] + dist(vm, xm) + h(xm) &lt; g_T[s_goal]:</span><br><span class="line">            c ← 边真实代价(vm, xm)</span><br><span class="line">            if g_est(vm) + c + h(xm) &lt; g_T[s_goal] and g_T[vm] + c &lt; g_T[xm]:</span><br><span class="line">                if xm ∈ V: 删除所有指向 xm 的旧边</span><br><span class="line">                else: X_sample.remove(xm); V.add(xm); QV.add(xm)</span><br><span class="line">                g_T[xm] ← g_T[vm] + c; E.add((vm, xm)); xm.parent ← vm</span><br><span class="line">                从 QE 剔除无改进的 (v, xm)</span><br><span class="line">        else:</span><br><span class="line">            QV ← QE ← ∅                            # 整批作废，下轮重采样</span><br><span class="line">    return 回溯(s_goal)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：如果当前没有一条到终点的可行路径，先全局随机采一批点，刚开始只有起点队列，QV代价为起点到终点的欧式距离，也没有QE待处理边所以先直接扩展起点，找到待扩展点半径内的采样点，如果代价小于当前终点的代价，先将这些采样点的代价设置为无穷，作为候选边入队，如果本次扩展的顶点没有在旧顶点集里面，就需要找半径内的节点，如果加上这个新的节点后，与周围的节点相连，代价比可行路径（终点的代价）小，并且新点的代价加上边的代价，比原来这个邻居的节点的代价还小，就加入候选边队列，如果这个过关的邻居还没有代价就先设置为无穷大。遍历候选边队列，选择返回当前扩展点真实代价+c+h （当前扩展点真实代价+边长+与终点的欧式距离）最小的边，把对应的端点从边队列中移除，<code>[如果 待扩展点真实代价+c+h小于终点的代价，就说明这条路有希望比终点的代价更低，检测边端点连线的碰撞，再判断通过 vm 到达 xm（两个端点，vm是扩展点，xm是邻居点），会不会比 xm 当前的路径更短，如果更短说明可以优化，，再看邻居点xm是不是已经在树顶点集合，如果在的话既然已经发现了更好的父节点vm，就要删除xm的旧边，如果xm不在树顶点队列里面，就把他加入树顶点和树待扩展点的队列，更新xm的真实代价，新边入树，连接到vm。因为xm的真实代价被更新了，所以一些连接xm的，比这个真实代价大的边需要去除，已经不可能比xm现有的连接更好了]</code>，<code>[待扩展点真实代价+c+h大于终点的代价，就丢弃]</code>。因为终点也被放入采样点里面，所以等到xm是终点的时候，终点就入树顶点了，也就有真实代价了。</strong></p>
+<p><strong>如果找到了一条到终点的可行路径，先剪枝，剔除无望采样点、顶点、边。采样将不在是全局随机采样，而是被圈定在一个椭球内，和Informed RRT_star一样，找到可行路径以后，BIT_star 不是停止从起点扩展，而是进入“基于已有树的优化阶段”。它仍然会扩展新采样点，但主要目标变成优化已有树的连接关系，降低路径代价。</strong></p>
+<h3 id="Dubins-RRT-·-dubins-rrt-star-py">Dubins-RRT* · <code>dubins_rrt_star.py</code></h3>
+<p>用满足曲率约束的 Dubins 曲线代替直线扩展。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">DubinsRRTStar(s_start, s_goal, iter_max):</span><br><span class="line">    V ← &#123;s_start&#125;</span><br><span class="line">    for i ← 1 to iter_max:</span><br><span class="line">        x_rand ← 若未命中目标偏置则随机位姿，否则 s_goal</span><br><span class="line">        x_near ← 最近邻(V, x_rand)</span><br><span class="line">        x_new ← Dubins 曲线连接(x_near, x_rand)      # 终点为新节点，代价加曲线长</span><br><span class="line">        if x_new and 无碰撞(x_new):                  # 碰撞检测只查圆障碍</span><br><span class="line">            X_near ← 近邻(V, x_new)                  # 半径 min(50√(log n/n), step_len)</span><br><span class="line">            x_new ← 选父(x_new, X_near)               # 近邻都连不上则丢弃</span><br><span class="line">            if x_new:</span><br><span class="line">                V.add(x_new)</span><br><span class="line">                重连(x_new, X_near)                  # 更省则替换近邻并传播代价</span><br><span class="line">    i_goal ← 距目标 step_len 内且可安全连接的代价最小节点索引</span><br><span class="line">    if i_goal = None: return 空                      # 源码会索引 None 报错</span><br><span class="line">    return 回溯(i_goal)</span><br></pre></td></tr></table></figure>
+<p><strong>概述：与之前的rrt_star不一样的是它的起点和终点都是有方向的，把直线连接替换成了Dubins曲线，但在优化近邻父节点的时候只用Dubins检测了碰撞，代价更新用的是直线距离，找到终点的安全候选点后，取代价最小的安全候选点，终点作为最后一个点，再从最小的安全候选点用Dubins曲线回溯，形成完整路径。</strong></p>
+<p><strong>流程与rrt_star完全一样，除了优化近邻父节点的时候只用Dubins检测了碰撞，代价更新用的是直线距离（复用rrt_star了），其他把直线连接的地方全换Dubins曲线就是Dubins-RRT_star</strong></p>
+<h2 id="局部路径规划">局部路径规划</h2>
+<h3 id="DWA-动态窗口法-·-Local-Planning-dwa-py">DWA 动态窗口法 · <code>Local_Planning/dwa.py</code></h3>
+<p>在加速度窗口内采样速度，五项加权打分后逐步滚动。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">DWA_run(start, goal):</span><br><span class="line">    state ← start, v ← 0.0, w ← 0.0</span><br><span class="line">    for step ∈ [0, max_steps):</span><br><span class="line">        rem_now ← path_remaining(state[0], state[1]), cands ← ∅</span><br><span class="line">        v_lo, v_hi, w_lo, w_hi ← dynamic_window(v, w)          # 受加速度限制的动态窗口</span><br><span class="line">        for (cv, cw) ∈ arange(v_lo, v_hi, v_reso) × arange(w_lo, w_hi, w_reso):</span><br><span class="line">            traj ← simulate(state, cv, cw, dt, predict_time / dt)</span><br><span class="line">            if not is_trajectory_collision(traj, clear_margin):</span><br><span class="line">                cands ← cands ∪ &#123;(evaluate(traj, cv, rem_now), cv, cw, traj)&#125;</span><br><span class="line">        if cands = ∅: v, w ← 0.0, 0.0                          # 窗口内全撞障就停车</span><br><span class="line">        else: (_, v, w, traj) ← max(cands)</span><br><span class="line">        state ← motion(state, v, w, dt)</span><br><span class="line">        if dist(state, goal) &lt; goal_tol: return True</span><br><span class="line">    return False</span><br><span class="line"></span><br><span class="line">evaluate(traj, v, rem_now):                                    # 五项加权打分</span><br><span class="line">    end ← traj[-1], look ← safe_lookahead(end[0], end[1], lookahead)</span><br><span class="line">    heading ← (π - |angle_diff(atan2(look[1] - end[1], look[0] - end[0]), end[2])|) / π</span><br><span class="line">    clear ← clip(min(obstacle_distance(p[0], p[1]) for p ∈ traj) / clear_thresh, 0, 1)</span><br><span class="line">    prog ← (rem_now - path_remaining(end[0], end[1])) / (v_max·predict_time)   # 未归一化，可为负</span><br><span class="line">    return (w_heading·heading + w_clear·clear + w_vel·max(0, v)/v_max</span><br><span class="line">            + w_path/(1 + nearest_on_path(end[0], end[1])[1]) + w_prog·prog)</span><br><span class="line"></span><br><span class="line">safe_lookahead(x, y, base):                                    # 沿参考路径外扩找安全前瞻点</span><br><span class="line">    d ← base, p ← path_lookahead(x, y, d)</span><br><span class="line">    for _ ∈ [0, lookahead_try):</span><br><span class="line">        if obstacle_distance(p[0], p[1]) &gt; lookahead_margin: return p</span><br><span class="line">        d ← d + lookahead_step, p ← path_lookahead(x, y, d)</span><br><span class="line">    return p</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先根据当前状态和运动学约束计算线速度、角速度的动态采样窗口，再离散采样得到候选速度组合；根据已有全局路径确定一个避障的安全前瞻目标，遍历所有候选线速度和角速度并进行轨迹积分，得到多条预测轨迹；先剔除碰撞轨迹，再从车头朝向、离障碍物远近、速度快慢、路径贴合程度以及向终点前进程度五个方面对安全轨迹进行加权评分，最终选取得分最高的候选轨迹及其控制量作为本次局部规划结果，每走一步就规划一次。</strong></p>
+<h3 id="TEB-时间弹性带-·-Local-Planning-teb-py">TEB 时间弹性带 · <code>Local_Planning/teb.py</code></h3>
+<p>位姿与时间构成弹性带，SLSQP 滚动重优化后纯跟踪执行。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">TEB_plan(start, goal):</span><br><span class="line">    state ← start, band ← nominal_band(state), dts ← init_dts(band)</span><br><span class="line">    for step ∈ [0, max_steps):</span><br><span class="line">        if step % reopt_k = 0:                                 # 到重优化周期</span><br><span class="line">            warm_band, warm_dts ← shift_band(band, dts, state)  # 丢走过点、末尾补新点并热启动</span><br><span class="line">            it ← maxiter if step = 0 else maxiter_fast          # 首次 22 次，滚动 6 次</span><br><span class="line">            band, dts ← optimize(state, warm_band, warm_dts, it)</span><br><span class="line">        v, w ← tracking_control(state, band)                   # 纯跟踪沿带子走</span><br><span class="line">        v ← brake(state, v, w)                                 # 碰撞前减速兜底</span><br><span class="line">        state ← motion(state, v, w, dt_sim)</span><br><span class="line">        if dist(state, goal) &lt; 1.0: return True</span><br><span class="line">    return False</span><br><span class="line"></span><br><span class="line">optimize(state, warm_band, warm_dts, maxiter):</span><br><span class="line">    z0 ← [warm_band[1:-1] 展平, clip(warm_dts, 0.05, 1.0)]     # 中间位姿与时间间隔热启动</span><br><span class="line">    z ← SLSQP(band_cost, z0, args=(state[:2], warm_band[-1]), bounds=(区域界, 0.05~1.0), maxiter)</span><br><span class="line">    return 由 z 还原 band（首尾固定）, clip(z 的时间间隔, 0.05, 1.0)</span><br><span class="line"></span><br><span class="line">band_cost(z, p_start, p_goal):</span><br><span class="line">    band ← [p_start, z 的中间点, p_goal]                       # 起点终点固定，中间点自由</span><br><span class="line">    dts ← z 的时间间隔</span><br><span class="line">    return w_path·Σ d_path² + w_obs·Σ max(0, d_safe - d_all)² + w_smooth·Σ ‖Δ²band‖²</span><br><span class="line">           + w_time·Σ dts + w_vel·Σ max(0, seg/dts - v_max)² + w_omega·Σ max(0, |Δθ|/dt_mid - w_max)²</span><br></pre></td></tr></table></figure>
+<p><strong>概述：以机器人当前所在的参考路径位置为起点，沿全局/参考路径向前截取一小段，并等弧长采样成 m个点，作为后续局部规划的“名义轨迹/名义带子”，如果末端太靠近障碍物，就把末端往回缩。开启周期性优化，先生成一条带，然后继承旧带部分覆盖新带。随后进行轨迹优化，SLSQP 把弹性带的中间点坐标 <code>x/y</code> 和每段时间 <code>dts</code> 当成优化变量，每次改变它们后通过 <code>band_cost()</code>计算“路径、避障、平滑、时间、速度、角速度”六项代价，并不断调整这些变量，让总代价尽可能小。</strong></p>
+<h3 id="MPC-模型预测控制（局部规划）-·-Local-Planning-mpc-py">MPC 模型预测控制（局部规划） · <code>Local_Planning/mpc.py</code></h3>
+<p>自行车模型下滚动优化 N 步控制序列，只执行第一步。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">MPC_run(start, goal):</span><br><span class="line">    state ← start, z ← initial_guess(), prev ← (0.0, 0.0)</span><br><span class="line">    for step ∈ [0, max_steps):</span><br><span class="line">        ref, s_tgt ← build_reference(state[0], state[1])       # 时域参考位姿与目标弧长</span><br><span class="line">        z ← solve(state, ref, z, s_tgt)                        # SLSQP 解 N 步 (v, w) 序列</span><br><span class="line">        v, w ← z[0], z[N]                                      # 只施加第一步</span><br><span class="line">        z ← warm_start(z)                                      # 解序列左移作下周期初值</span><br><span class="line">        state ← motion(state, v, w, dt)</span><br><span class="line">        prev ← (v, w)</span><br><span class="line">        if dist(state, goal) &lt; goal_tol: return True</span><br><span class="line">    return False</span><br><span class="line"></span><br><span class="line">solve(state, ref, z0, s_tgt):</span><br><span class="line">    z ← SLSQP(rollout_cost, z0, args=(state, ref, prev, s_tgt), bounds=(0≤v≤v_max, -w_max≤w≤w_max)×N, maxiter)</span><br><span class="line">    z ← z0 if z 中存在非有限值</span><br><span class="line">    return clip(z, bounds)</span><br><span class="line"></span><br><span class="line">rollout_cost(z, state, ref, prev, s_tgt):</span><br><span class="line">    vs, ws ← z[:N], z[N:]</span><br><span class="line">    cost ← 0.0, st ← state</span><br><span class="line">    for k ∈ [0, N):</span><br><span class="line">        st ← motion(st, vs[k], ws[k], dt)                      # 单车模型积分一步</span><br><span class="line">        cost += w_xy·‖st[:2] - ref[k][:2]‖² + w_theta·angle_diff(st[2], ref[k, 2])²</span><br><span class="line">        cost += w_obs·max(0, d_safe - obstacle_distance(st[0], st[1]))²</span><br><span class="line">    cost += w_prog·(s_tgt - path_s[最近点])²                   # 纵向进度项，缺了会卡在障碍前</span><br><span class="line">    cost += w_term·‖末端位置误差‖² + w_v·Σ vs² + w_w·Σ ws²</span><br><span class="line">    cost += w_dv·Σ Δvs² + w_dw·Σ Δws²                          # 控制增量平滑</span><br><span class="line">    return cost</span><br></pre></td></tr></table></figure>
+<p><strong>概述：找到机器人在全局路径上的位置，沿着路径向前取一段参考点，把优化器给出的未来n步速度 <code>v</code> 和角速度 <code>w</code> 依次代入车辆运动模型进行前向推演，得到整条预测轨迹，然后逐步计算预测位置与参考位置的跟踪误差、航向误差和障碍物距离，并在预测结束后加入终点误差和路径前进进度误差，同时对速度、角速度的大小以及它们的变化幅度进行惩罚，最后把这些代价全部加起来形成一个总代价 <code>cost</code> 返回给 SLSQP，SLSQP 再不断调整这 30 个控制变量，使这个总代价尽可能小。</strong></p>
+<h2 id="轨迹跟踪">轨迹跟踪</h2>
+<h3 id="Pure-Pursuit-纯跟踪-·-Tracking-pure-pursuit-py">Pure Pursuit 纯跟踪 · <code>Tracking/pure_pursuit.py</code></h3>
+<p>沿参考轨迹取前视点，几何法直接解出前轮转角。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">PurePursuit(state, Ld):</span><br><span class="line">    x, y, theta ← state</span><br><span class="line">    px, py ← lookahead_point(x, y, Ld)             # 沿轨迹前视 Ld</span><br><span class="line">    bearing ← atan2(py - y, px - x)</span><br><span class="line">    alpha ← normalize_angle(bearing - theta)</span><br><span class="line">    delta ← atan2(2·L·sin(alpha), Ld)</span><br><span class="line">    delta ← clip(delta, -delta_max, delta_max)</span><br><span class="line">    return delta, px, py</span><br><span class="line"></span><br><span class="line">跟踪主循环(state):</span><br><span class="line">    for step ← 1 to max_steps:</span><br><span class="line">        delta, _, _ ← PurePursuit(state, Ld)</span><br><span class="line">        state ← bicycle_step(state, v, delta, L, dt)    # 匀速前进</span><br><span class="line">        if path_remaining(state) &lt; 2.0: break</span><br><span class="line">    return state</span><br></pre></td></tr></table></figure>
+<p><strong>概述：沿轨迹向前取前视点，计算车辆位姿与前视点的方位角偏差，根据纯跟踪转角公式，根据自行车模型向前行进一步，然后循环持续跟踪。</strong></p>
+<h3 id="LQR-线性二次型调节器-·-Tracking-lqr-py">LQR 线性二次型调节器 · <code>Tracking/lqr.py</code></h3>
+<p>误差模型线性化，离线解一次黎卡提方程得固定增益。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">LQR_初始化(L, v, Q, R):</span><br><span class="line">    A ← [[0, v], [0, 0]]</span><br><span class="line">    B ← [[0], [v / L]]</span><br><span class="line">    P ← solve_continuous_are(A, B, Q, R)           # 黎卡提方程，只需算一次</span><br><span class="line">    K ← R⁻¹·Bᵀ·P</span><br><span class="line">    return K</span><br><span class="line"></span><br><span class="line">LQR_控制(state, K):</span><br><span class="line">    e_y, e_theta, i ← lateral_error(state)</span><br><span class="line">    delta_ff ← atan(L · path[i, 3])                # 曲率前馈</span><br><span class="line">    delta ← delta_ff − K·[e_y, e_theta]</span><br><span class="line">    return clip(delta, −delta_max, delta_max)</span><br><span class="line"></span><br><span class="line">跟踪主循环(state, K):</span><br><span class="line">    for step ← 1 to max_steps:</span><br><span class="line">        delta ← LQR_控制(state, K)</span><br><span class="line">        state ← bicycle_step(state, v, delta, L, dt)</span><br><span class="line">        if path_remaining(state) &lt; goal_tol: break</span><br><span class="line">    return state</span><br></pre></td></tr></table></figure>
+<p><strong>概述：取出当前车辆状态，并找到参考路径上的最近点，计算车辆相对于参考路径的横向误差和航向误差，再获取参考点的曲率，根据参考曲率计算前馈转角。同时将横向误差和航向误差组成误差状态向量，通过车辆误差模型得到状态矩阵 A、控制矩阵 B，并根据对状态误差的惩罚 Q 和对控制输入的惩罚 R，求解代数黎卡提方程得到 P，再计算 LQR 反馈增益 K。将误差状态与 K 相乘得到反馈修正量，最终将前馈转角减去反馈修正量得到车辆的转向角，并通过车辆运动模型向前运动一步，循环执行上述过程，实现车辆的横向路径跟踪。</strong></p>
+<h3 id="MPC-模型预测控制（轨迹跟踪）-·-Tracking-mpc-py">MPC 模型预测控制（轨迹跟踪） · <code>Tracking/mpc.py</code></h3>
+<p>未来 N 步的误差预测上做带约束二次规划，只执行第一步。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">MPC_初始化(N, L, v, Q, R, Rd, dt):</span><br><span class="line">    Ad ← I + [[0, v], [0, 0]]·dt</span><br><span class="line">    Bd ← [0, v / L]·dt</span><br><span class="line">    P ← solve_continuous_are(A, B, Q, R)           # 终端代价，与 LQR 同源</span><br><span class="line">    预计算 M, K：X ← M·x0 + K·U                    # 未来 N 步误差状态映射</span><br><span class="line">    H ← Kᵀ·G·K + R·I + Rd·Dᵀ·D</span><br><span class="line">    u_last ← 0, U ← 0</span><br><span class="line">    return M, K, H</span><br><span class="line"></span><br><span class="line">MPC_求解(x0, u_last, U):</span><br><span class="line">    f ← Kᵀ·G·M·x0 − Rd·u_last·e0</span><br><span class="line">    # J = Σ_&#123;k=1&#125;^&#123;N−1&#125; x_kᵀQ x_k + x_NᵀP x_N + R·Σu_k² + Rd·Σ(u_k − u_&#123;k−1&#125;)²，u_&#123;−1&#125; = u_last</span><br><span class="line">    U ← SLSQP(argmin Uᵀ·H·U + 2fᵀ·U, 梯度 2(H·U + f))   # 解析梯度，约 0.6 ms</span><br><span class="line">    s.t. −delta_max ≤ U ≤ delta_max                     # 转角约束化为 bounds</span><br><span class="line">    u_last ← U[0], U ← [U[1], …, U[N−1], U[N−1]]        # 左移一位热启动</span><br><span class="line">    return U[0], u_last, U</span><br><span class="line"></span><br><span class="line">MPC_控制(state):</span><br><span class="line">    e_y, e_theta, i ← lateral_error(state)</span><br><span class="line">    delta_ff ← atan(L · path[i, 3])</span><br><span class="line">    u0, u_last, U ← MPC_求解([e_y, e_theta], u_last, U)</span><br><span class="line">    delta ← clip(delta_ff + u0, −delta_max, delta_max)   # 只施加第一步</span><br><span class="line">    rollout(state, delta_ff, U)                          # 下一周期重新优化</span><br><span class="line">    return delta</span><br></pre></td></tr></table></figure>
+<p><strong>概述：先构造离散车辆误差模型代价，后面只需要计算f，剩下变量U，就可以用SLSQP快速求最优控制序列，也就是未来序列的转角修正量。取出当前车辆状态，并找到参考路径上的最近点，计算车辆相对于参考路径的横向误差和航向误差，再获取参考点的曲率，根据参考曲率计算前馈转角。根据当前误差 x0和上一时刻控制量，计算当前 MPC 二次代价函数中的线性项系数 f，即可快速算出总代价（跟踪误差代价、控制量代价-修正量不能太大、控制变化代价、终端代价），然后用 SLSQP找到最小代价的控制序列U。U是未来的n个时刻的转角修正量。LQR直接根据当前误差计算一个控制量，而MPC会预测未来一段时间，并优化一整串控制量。拿已经优化出来的未来控制序列 U，通过运动学模型，把车辆未来 N 步可能走出的轨迹推演出来，每走一步就重新向前预测</strong></p>
+<h2 id="附录-A：算法对比">附录 A：算法对比</h2>
+<h3 id="搜索式">搜索式</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>算法</th>
+<th>最优性</th>
+<th>重规划</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>BFS</td>
+<td>步数最少</td>
+<td>✗</td>
+<td>逐层扩散</td>
+</tr>
+<tr>
+<td>2</td>
+<td>DFS</td>
+<td>不保证</td>
+<td>✗</td>
+<td>一条道走到黑</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Best-First</td>
+<td>不保证</td>
+<td>✗</td>
+<td>只看 <code>h</code>，贪心</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Dijkstra</td>
+<td>✅ 最优</td>
+<td>✗</td>
+<td>只看 <code>g</code>，均匀铺开</td>
+</tr>
+<tr>
+<td>5</td>
+<td>A*</td>
+<td>✅ 最优</td>
+<td>✗</td>
+<td><code>g + h</code>，兼顾两边</td>
+</tr>
+<tr>
+<td>6</td>
+<td>双向 A*</td>
+<td>✅ 最优</td>
+<td>✗</td>
+<td>两头同时搜，中间碰头</td>
+</tr>
+<tr>
+<td>7</td>
+<td>ARA*</td>
+<td>有界次优</td>
+<td>✗</td>
+<td>权重递减，先快后精</td>
+</tr>
+<tr>
+<td>8</td>
+<td>LRTA*</td>
+<td>不保证</td>
+<td>边走边学</td>
+<td>每步只搜一点，修正 <code>h</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>RTAA*</td>
+<td>不保证</td>
+<td>边走边学</td>
+<td>LRTA* 改进，一次多搜几步</td>
+</tr>
+<tr>
+<td>10</td>
+<td>LPA*</td>
+<td>✅ 最优</td>
+<td>✅ 起点变</td>
+<td>复用上次结果，只改局部</td>
+</tr>
+<tr>
+<td>11</td>
+<td>D*</td>
+<td>✅ 最优</td>
+<td>✅ 地图变</td>
+<td>从终点反向搜，遇障即修</td>
+</tr>
+</tbody>
+</table>
+<h3 id="采样式">采样式</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>算法</th>
+<th>最优性</th>
+<th>重规划</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12</td>
+<td>RRT</td>
+<td>不保证</td>
+<td>✗</td>
+<td>随机撒点长树</td>
+</tr>
+<tr>
+<td>13</td>
+<td>RRT-Connect</td>
+<td>不保证</td>
+<td>✗</td>
+<td>两棵树对着长</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Extended-RRT</td>
+<td>不保证</td>
+<td>✅</td>
+<td>一次朝一个方向连走几步</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Dynamic-RRT</td>
+<td>不保证</td>
+<td>✅</td>
+<td>环境变了砍枝重长</td>
+</tr>
+<tr>
+<td>16</td>
+<td>RRT*</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>加&quot;选父&quot;和&quot;重连&quot;</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Informed RRT*</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>只在椭球内采样</td>
+</tr>
+<tr>
+<td>18</td>
+<td>RRT*-Smart</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>路径优化 + 拐角采样</td>
+</tr>
+<tr>
+<td>19</td>
+<td>FMT*</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>批量采样，一次连图</td>
+</tr>
+<tr>
+<td>20</td>
+<td>BIT*</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>边采样边搜索</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Dubins-RRT*</td>
+<td>渐近最优</td>
+<td>✗</td>
+<td>用 Dubins 曲线连接</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>渐近最优</strong>：采样越多越接近最优，但有限时间内不保证最优。</p>
+</blockquote>
+<h3 id="局部路径规划-2">局部路径规划</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>算法</th>
+<th>范式</th>
+<th>能避障</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>DWA</td>
+<td>采样 + 打分</td>
+<td>✅</td>
+<td>在动态窗口内采样速度，按五项打分选最优</td>
+</tr>
+<tr>
+<td>2</td>
+<td>TEB</td>
+<td>优化（弹性带）</td>
+<td>✅</td>
+<td>把轨迹当橡皮筋，用 SLSQP 拉直又躲开障碍</td>
+</tr>
+<tr>
+<td>3</td>
+<td>MPC（局部规划）</td>
+<td>优化（滚动时域）</td>
+<td>✅</td>
+<td>每个周期解一次带避障罚项的有限时域优化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="轨迹跟踪-2">轨迹跟踪</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>算法</th>
+<th>范式</th>
+<th>最大横向误差</th>
+<th>单次求解</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Pure Pursuit</td>
+<td>几何法</td>
+<td>0.093 m</td>
+<td>—</td>
+<td>盯着前方一个点打方向</td>
+</tr>
+<tr>
+<td>2</td>
+<td>LQR</td>
+<td>最优反馈</td>
+<td><strong>0.014 m</strong></td>
+<td>离线算一次</td>
+<td>用 Riccati 增益做误差反馈</td>
+</tr>
+<tr>
+<td>3</td>
+<td>MPC（轨迹跟踪）</td>
+<td>预测控制</td>
+<td>0.019 m</td>
+<td>0.6 ms</td>
+<td>每个周期解一次有限时域优化</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>轨迹跟踪的误差是本文档参考轨迹（正弦路、车速 5 m/s）下的实测值。LQR 精度最高是因为无限时域 Riccati 增益本身就是无约束最优；MPC 多了一项转角增量平滑惩罚（打方向更柔和），代价是精度损失一点点——但只有 MPC 能显式处理转角速率、执行器饱和、避障这类<strong>约束</strong>。</p>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io">YinHao Ye</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://heihei-momo.github.io/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/">https://heihei-momo.github.io/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://heihei-momo.github.io" target="_blank">MoMo</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">全局路径规划</a><a class="post-meta__tags" href="/tags/%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/">局部路径规划</a><a class="post-meta__tags" href="/tags/%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA/">路径跟踪</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/08/01/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/06%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0+%E8%AF%AF%E5%B7%AE%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2SLAM%E5%BB%BA%E5%9B%BE%E6%96%B9%E6%B3%95/" title="稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法</div></div><div class="info-2"><div class="info-item-1">深度学习+误差卡尔曼滤波SLAM建图方法 针对非结构野外环境下的稀疏点云建图方法   纯cpu推理，FPS达19.25，符合实时要求 </div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/01move_base%E5%85%A8%E5%B1%80%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92A*%E7%AE%97%E6%B3%95%E6%8F%92%E4%BB%B6/" title="A*全局路径规划"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">A*全局路径规划</div></div><div class="info-2"><div class="info-item-1">总览 实现 ROS nav_core::BaseGlobalPlanner 插件形式的全局规划器。规划器从 costmap_2d::Costmap2DROS 获取代价地图，将地图离散为二值栅格（可通行/障碍）。规划器在栅格上运行 A* 搜索，生成从起点到终点的栅格路径。规划器将栅格路径转换回世界坐标，补齐姿态朝向，形成 std::vector&lt;geometry_msgs::PoseStamped&gt; 的 plan，并发布为 nav_msgs/Path 话题。  A* 的核心思想 A* 在栅格图上寻找从起点到终点的最小代价路径。A* 维护一个候选集合（Open）和一个已处理集合（Closed），并用代价函数对候选节点排序。 1) 代价函数 A* 使用如下评分：  g(n)：从起点走到当前节点 n 的累计代价 h(n)：从当前节点 n 到终点的启发式估计代价 f(n) = g(n) + h(n)：综合评分，用于选择下一步扩展的节点  该实现中 Point 结构包含 f, g, h： 1234struct Point&#123;    int x,y;    int f,g,...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/02move_base%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%E5%99%A8%E6%8F%92%E4%BB%B6/" title="局部路径规划"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">局部路径规划</div></div><div class="info-2"><div class="info-item-1">总览 实现了一个 ROS nav_core::BaseLocalPlanner 插件形式的局部规划器 my_planner::MyPlanner。规划器接收上层给定的全局路径 global_plan_，在每个控制周期内根据机器人当前位姿选择一个临时目标点，并输出线速度与角速度 cmd_vel。规划器使用 PID 思路对横向偏差进行角速度控制，并对速度进行限幅。规划器同时读取局部代价地图（local costmap）进行禁行区域检测，当检测到前方路径点落在禁行区域时返回 false 触发重新全局规划。规划器在接近终点后进入终点姿态调整分支，完成最终角度对齐并置位 goal_reached_。  插件注册与控制参数 插件通过 PLUGINLIB_EXPORT_CLASS 注册为 nav_core::BaseLocalPlanner： 1PLUGINLIB_EXPORT_CLASS(my_planner::MyPlanner, nav_core::BaseLocalPlanner) 该实现使用 PID 控制转向，参数为：  Kp = 4.5 Ki = 0.0 Kd = 0.5  PID...</div></div></div></a><a class="pagination-related" href="/2026/03/02/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/03RS%E6%9B%B2%E7%BA%BF%E5%92%8C%E6%B7%B7%E5%90%88A*/" title="RS曲线和混合A*"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-02</div><div class="info-item-2">RS曲线和混合A*</div></div><div class="info-2"><div class="info-item-1">1.RS曲线 1.1RS曲线介绍 Reeds-Shepp 曲线（Reeds–Shepp Curve）是一种描述可前进和可后退，但转弯半径不变的的非完整约束车辆的最短路径，是对Dubins曲线的扩展 rs曲线主要用于短距离连接两个姿态点（x，y，theta），一般用L表示左转，R表示右转，+表示向前，-表示向后，C~beta~，中的下标beta表示转过固定beta角度（曲线的圆心角），|表示车辆运动由正向变为反向，或是由反向变为正向，C表示左转L或者右转R，如果是CC连在一起，那么一定是R和L的切换。（因为如果不是，那就会退化，如L~a~+L~b~+=L~a+b~+，L+L-=原地不动） 据论文，为实现最优路径（路径最短），总共有五类路径族，分别是：    CSC CCC CCCC CCSC CCSCC    可以分为48种情况，后有两种被证明不可能为最优（L-R+L-，R-L+R-）  RS曲线具有三种变换可以简化计算，分别是时间翻转，反射，向后变换  根据这三种变换，可以把48种路径简化为12种基路径  1.2RS曲线一般使用过程 为了简化计算，一般会将曲线分为三步处理 1.对...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">YinHao Ye</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">29</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">13</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">8</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/heihei-momo"><i class="fab fa-github"></i><span>前往小窝</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/heihei-momo" target="_blank" title="Github"><i class="fab fa-github"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">1.</span> <span class="toc-text">常见路径规划与跟踪算法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E7%AC%A6%E5%8F%B7"><span class="toc-number">1.1.</span> <span class="toc-text">通用符号</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%90%9C%E7%B4%A2%E5%BC%8F%E8%A7%84%E5%88%92"><span class="toc-number">1.2.</span> <span class="toc-text">搜索式规划</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#BFS-%E5%B9%BF%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2-%C2%B7-bfs-py"><span class="toc-number">1.2.1.</span> <span class="toc-text">BFS 广度优先搜索 · bfs.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DFS-%E6%B7%B1%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2-%C2%B7-dfs-py"><span class="toc-number">1.2.2.</span> <span class="toc-text">DFS 深度优先搜索 · dfs.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Best-First-%E6%9C%80%E4%BD%B3%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2-%C2%B7-Best-First-py"><span class="toc-number">1.2.3.</span> <span class="toc-text">Best-First 最佳优先搜索 · Best_First.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dijkstra-%E7%AE%97%E6%B3%95-%C2%B7-Dijkstra-py"><span class="toc-number">1.2.4.</span> <span class="toc-text">Dijkstra 算法 · Dijkstra.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#A-%E7%AE%97%E6%B3%95-%C2%B7-Astar-py"><span class="toc-number">1.2.5.</span> <span class="toc-text">A* 算法 · Astar.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%8C%E5%90%91-A-%C2%B7-Bidirectional-a-star-py"><span class="toc-number">1.2.6.</span> <span class="toc-text">双向 A* · Bidirectional_a_star.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ARA-%C2%B7-ARAstar-py"><span class="toc-number">1.2.7.</span> <span class="toc-text">ARA* · ARAstar.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LRTA-%C2%B7-LRTAstar-py"><span class="toc-number">1.2.8.</span> <span class="toc-text">LRTA* · LRTAstar.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RTAA-%C2%B7-RTAAStar-py"><span class="toc-number">1.2.9.</span> <span class="toc-text">RTAA* · RTAAStar.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LPA-%C2%B7-LPAstar-py"><span class="toc-number">1.2.10.</span> <span class="toc-text">LPA* · LPAstar.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#D-%C2%B7-D-star-py"><span class="toc-number">1.2.11.</span> <span class="toc-text">D* · D_star.py</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%87%E6%A0%B7%E5%BC%8F%E8%A7%84%E5%88%92"><span class="toc-number">1.3.</span> <span class="toc-text">采样式规划</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RRT-%C2%B7-rrt-py"><span class="toc-number">1.3.1.</span> <span class="toc-text">RRT · rrt.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RRT-Connect-%C2%B7-rrt-connect-py"><span class="toc-number">1.3.2.</span> <span class="toc-text">RRT-Connect · rrt_connect.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Extended-RRT-%C2%B7-extended-rrt-py"><span class="toc-number">1.3.3.</span> <span class="toc-text">Extended-RRT · extended_rrt.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dynamic-RRT-%C2%B7-dynamic-rrt-py"><span class="toc-number">1.3.4.</span> <span class="toc-text">Dynamic-RRT · dynamic_rrt.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RRT-%C2%B7-rrt-star-py"><span class="toc-number">1.3.5.</span> <span class="toc-text">RRT* · rrt_star.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Informed-RRT-%C2%B7-informed-rrt-star-py"><span class="toc-number">1.3.6.</span> <span class="toc-text">Informed RRT* · informed_rrt_star.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RRT-Smart-%C2%B7-rrt-star-smart-py"><span class="toc-number">1.3.7.</span> <span class="toc-text">RRT*-Smart · rrt_star_smart.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#FMT-%EF%BC%88%E5%BF%AB%E9%80%9F%E8%A1%8C%E8%BF%9B%E6%A0%91%EF%BC%89-%C2%B7-fast-marching-trees-py"><span class="toc-number">1.3.8.</span> <span class="toc-text">FMT*（快速行进树） · fast_marching_trees.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#BIT-%EF%BC%88%E6%89%B9%E5%A4%84%E7%90%86%E7%9F%A5%E6%83%85%E6%A0%91%EF%BC%89-%C2%B7-batch-informed-trees-py"><span class="toc-number">1.3.9.</span> <span class="toc-text">BIT*（批处理知情树） · batch_informed_trees.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dubins-RRT-%C2%B7-dubins-rrt-star-py"><span class="toc-number">1.3.10.</span> <span class="toc-text">Dubins-RRT* · dubins_rrt_star.py</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92"><span class="toc-number">1.4.</span> <span class="toc-text">局部路径规划</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DWA-%E5%8A%A8%E6%80%81%E7%AA%97%E5%8F%A3%E6%B3%95-%C2%B7-Local-Planning-dwa-py"><span class="toc-number">1.4.1.</span> <span class="toc-text">DWA 动态窗口法 · Local_Planning&#x2F;dwa.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TEB-%E6%97%B6%E9%97%B4%E5%BC%B9%E6%80%A7%E5%B8%A6-%C2%B7-Local-Planning-teb-py"><span class="toc-number">1.4.2.</span> <span class="toc-text">TEB 时间弹性带 · Local_Planning&#x2F;teb.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MPC-%E6%A8%A1%E5%9E%8B%E9%A2%84%E6%B5%8B%E6%8E%A7%E5%88%B6%EF%BC%88%E5%B1%80%E9%83%A8%E8%A7%84%E5%88%92%EF%BC%89-%C2%B7-Local-Planning-mpc-py"><span class="toc-number">1.4.3.</span> <span class="toc-text">MPC 模型预测控制（局部规划） · Local_Planning&#x2F;mpc.py</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BD%A8%E8%BF%B9%E8%B7%9F%E8%B8%AA"><span class="toc-number">1.5.</span> <span class="toc-text">轨迹跟踪</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Pure-Pursuit-%E7%BA%AF%E8%B7%9F%E8%B8%AA-%C2%B7-Tracking-pure-pursuit-py"><span class="toc-number">1.5.1.</span> <span class="toc-text">Pure Pursuit 纯跟踪 · Tracking&#x2F;pure_pursuit.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LQR-%E7%BA%BF%E6%80%A7%E4%BA%8C%E6%AC%A1%E5%9E%8B%E8%B0%83%E8%8A%82%E5%99%A8-%C2%B7-Tracking-lqr-py"><span class="toc-number">1.5.2.</span> <span class="toc-text">LQR 线性二次型调节器 · Tracking&#x2F;lqr.py</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#MPC-%E6%A8%A1%E5%9E%8B%E9%A2%84%E6%B5%8B%E6%8E%A7%E5%88%B6%EF%BC%88%E8%BD%A8%E8%BF%B9%E8%B7%9F%E8%B8%AA%EF%BC%89-%C2%B7-Tracking-mpc-py"><span class="toc-number">1.5.3.</span> <span class="toc-text">MPC 模型预测控制（轨迹跟踪） · Tracking&#x2F;mpc.py</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%E5%BD%95-A%EF%BC%9A%E7%AE%97%E6%B3%95%E5%AF%B9%E6%AF%94"><span class="toc-number">1.6.</span> <span class="toc-text">附录 A：算法对比</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%90%9C%E7%B4%A2%E5%BC%8F"><span class="toc-number">1.6.1.</span> <span class="toc-text">搜索式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%87%E6%A0%B7%E5%BC%8F"><span class="toc-number">1.6.2.</span> <span class="toc-text">采样式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B1%80%E9%83%A8%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92-2"><span class="toc-number">1.6.3.</span> <span class="toc-text">局部路径规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BD%A8%E8%BF%B9%E8%B7%9F%E8%B8%AA-2"><span class="toc-number">1.6.4.</span> <span class="toc-text">轨迹跟踪</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/10/04/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92/%E8%B7%AF%E5%BE%84%E8%A7%84%E5%88%92%E4%B8%8E%E8%B7%9F%E8%B8%AA/" title="常见路径规划算法与跟踪">常见路径规划算法与跟踪</a><time datetime="2026-10-04T14:22:36.000Z" title="发表于 2026-10-04 22:22:36">2026-10-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/08/01/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/06%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0+%E8%AF%AF%E5%B7%AE%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2SLAM%E5%BB%BA%E5%9B%BE%E6%96%B9%E6%B3%95/" title="稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法">稀疏点云下的深度学习+误差卡尔曼滤波SLAM建图方法</a><time datetime="2026-08-01T02:21:42.000Z" title="发表于 2026-08-01 10:21:42">2026-08-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/15/%E4%B8%89%E7%BB%B4%E5%BB%BA%E5%9B%BE/05%E4%BC%A0%E7%BB%9F%E6%96%B9%E6%B3%95%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%87%AA%E4%B8%BB%E6%8E%A2%E7%B4%A2/" title="传统方法机器人未知环境自主探索">传统方法机器人未知环境自主探索</a><time datetime="2026-04-14T23:21:05.000Z" title="发表于 2026-04-15 07:21:05">2026-04-15</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/01/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/04bevformer/" title="BEVformer">BEVformer</a><time datetime="2026-04-01T00:21:05.000Z" title="发表于 2026-04-01 08:21:05">2026-04-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/03FPN%E7%89%B9%E5%BE%81%E8%9E%8D%E5%90%88/" title="FPN特征融合">FPN特征融合</a><time datetime="2026-03-30T00:21:05.000Z" title="发表于 2026-03-30 08:21:05">2026-03-30</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(async () => {
+  const showKatex = () => {
+    document.querySelectorAll('#article-container .katex').forEach(el => el.classList.add('katex-show'))
+  }
+
+  if (!window.katex_js_css) {
+    window.katex_js_css = true
+    await btf.getCSS('https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.css')
+    if (false) {
+      await btf.getScript('https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/contrib/copy-tex.min.js')
+    }
+  }
+
+  showKatex()
+})()</script></div><script>(function(){try{if(window.innerWidth<=768)return;if(navigator.connection&&navigator.connection.saveData)return;if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;var v=document.createElement('video');v.id='bg-video';v.autoplay=true;v.muted=true;v.loop=true;v.defaultMuted=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.setAttribute('preload','auto');var s=document.createElement('source');s.src='/img/wallpaper.mp4';s.type='video/mp4';v.appendChild(s);v.addEventListener('canplay',function(){var p=v.play();if(p&&p.catch)p.catch(function(){})});document.body.insertBefore(v,document.body.firstChild)}catch(e){}})();</script><script> (function(){ function setup(){ if(document.getElementById('momo-music-btn')){return true} var a=document.createElement('audio'); a.id='momo-bgm';a.src='/music/1.mp3';a.loop=true;a.preload='auto';a.volume=0.6; document.body.appendChild(a); var b=document.createElement('button'); b.id='momo-music-btn';b.type='button';b.title='背景音乐：被神明写的歌 - K.D'; b.innerHTML='<img src="/music/wangyiyun.webp" alt="背景音乐">'; document.body.appendChild(b); var skip=0,byButton=0; function T(){try{return sessionStorage.getItem('momo-bgm')}catch(e){return null}} function S(k,v){try{sessionStorage.setItem(k,v)}catch(e){}} function unlock(){ document.removeEventListener('click',unlock,true); document.removeEventListener('keydown',unlock,true); document.removeEventListener('touchstart',unlock,true); document.removeEventListener('scroll',unlock,true); a.muted=false;b.title='背景音乐：被神明写的歌 - K.D';skip=1;setTimeout(function(){skip=0},500); if(a.paused){var p=a.play();if(p&&p.catch){p.catch(function(){})}}} function armUnlock(){ b.title='已静音自动播放 · 点/滑一下开启声音'; document.addEventListener('click',unlock,true); document.addEventListener('keydown',unlock,true); document.addEventListener('touchstart',unlock,true); document.addEventListener('scroll',unlock,true)} function tryAuto(){ if(T()==='0'){return} try{ var p=a.play(); if(p&&p.catch){p.catch(function(){a.muted=true;var m=a.play();if(m&&m.catch){m.catch(function(){})}armUnlock()})} }catch(e){}} b.addEventListener('click',function(){ if(skip){return} if(a.paused){var p=a.play();if(p&&p.catch){p.catch(function(){})}} else if(a.muted){unlock()} else{byButton=1;a.pause()}}); a.addEventListener('play',function(){b.classList.add('playing');S('momo-bgm','1')}); a.addEventListener('pause',function(){b.classList.remove('playing');S('momo-bgm',byButton?'0':'1');byButton=0}); a.addEventListener('loadedmetadata',function(){ try{var t=parseFloat(sessionStorage.getItem('momo-bgm-t'));if(t>1&&T()!=='0'){a.currentTime=t}}catch(e){}}); setInterval(function(){if(!a.paused){S('momo-bgm-t',String(a.currentTime))}},2000); window.momoMusic={audio:a,btn:b,unlock:unlock}; tryAuto(); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ function setup(){ var box=document.querySelector('#aside-content .card-info .card-info-social-icons'); if(!box||document.getElementById('momo-qr-mask')){return !!box} var items=[ {icon:'fab fa-weixin',label:'微信',img:'/img/weixin.jpeg'}, {icon:'fab fa-qq',label:'QQ',img:'/img/qq.jpeg'}, {icon:'fab fa-bilibili',label:'Bilibili',url:'https://space.bilibili.com/512875452'}]; var mask=document.createElement('div'); mask.id='momo-qr-mask'; mask.innerHTML='<div id="momo-qr-box"><img id="momo-qr-img" alt="二维码"><div class="t" id="momo-qr-t"></div></div>'; document.body.appendChild(mask); var img=document.getElementById('momo-qr-img'),tt=document.getElementById('momo-qr-t'); function close(){mask.classList.remove('show')} mask.addEventListener('click',close); document.addEventListener('keydown',function(e){if(e.key==='Escape'){close()}}); items.forEach(function(it){ var a=document.createElement('a'); a.className='social-icon';a.innerHTML='<i class="'+it.icon+'"></i>'; if(it.url){a.href=it.url;a.target='_blank';a.rel='noopener';a.title=it.label} else{a.href='javascript:void(0)';a.title=it.label+' 二维码'; a.addEventListener('click',function(e){e.preventDefault();e.stopPropagation(); img.src=it.img;tt.textContent=it.label+' · 点击任意处关闭';mask.classList.add('show')})} box.appendChild(a)}); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ document.addEventListener('click',function(e){ var d=document.createElement('span'); d.className='momo-ripple'; d.style.left=e.clientX+'px';d.style.top=e.clientY+'px'; document.body.appendChild(d); setTimeout(function(){if(d.parentNode){d.parentNode.removeChild(d)}},700); },{passive:true}); })(); </script><script> (function(){ if(!window.matchMedia||!window.matchMedia('(hover: hover) and (pointer: fine)').matches){return} var d=document.createElement('div'); d.id='momo-halo'; document.body.appendChild(d); function set(e){ if(!d.classList.contains('on')){d.classList.add('on')} d.style.transform='translate3d('+e.clientX+'px,'+e.clientY+'px,0)'} document.addEventListener('pointerrawupdate',set,{passive:true}); document.addEventListener('mousemove',set,{passive:true}); document.addEventListener('mouseleave',function(){d.classList.remove('on')}); })(); </script><script> (function(){ function isDark(){return document.documentElement.getAttribute('data-theme')==='dark'} function paint(){ var dark=isDark(); var links=document.querySelectorAll('#card-toc .toc-link'); for(var i=0;i<links.length;i++){ var el=links[i],on=el.classList.contains('active'); if(on){ el.style.setProperty('background',dark?'rgba(167,139,250,0.2)':'rgba(139,92,246,0.18)','important'); el.style.setProperty('color',dark?'#ddd6fe':'#5b21b6','important'); el.style.setProperty('font-weight','600','important'); el.style.setProperty('box-shadow','inset 3px 0 0 '+(dark?'#a78bfa':'#7c3aed'),'important')} else{ el.style.removeProperty('background');el.style.removeProperty('color'); el.style.removeProperty('font-weight');el.style.removeProperty('box-shadow')}}} var raf=0; function schedule(){if(raf){return}raf=requestAnimationFrame(function(){raf=0;paint()})} document.addEventListener('scroll',schedule,{passive:true}); window.addEventListener('load',function(){paint();setInterval(paint,800)}); })(); </script><script> (function(){ var ICON='📋'; function setup(){ var i=document.querySelector('.card-announcement .item-headline i, #card-announcement .item-headline i'); if(!i||document.querySelector('.momo-announce-icon')){return !!i} var s=document.createElement('span'); s.className='momo-announce-icon'; s.textContent=ICON; i.parentNode.replaceChild(s,i); return true} if(!setup()){var n=0,t=setInterval(function(){if(setup()||++n>40){clearInterval(t)}},250)} })(); </script><script> (function(){ function setup(){ if(document.getElementById('momo-fps')){return true} var d=document.createElement('div'); d.id='momo-fps';d.title='实时帧率'; d.innerHTML='<span id="momo-fps-num">--</span> FPS'; document.body.appendChild(d); var el=document.getElementById('momo-fps-num'),frames=0,t0=0; function tick(ts){ if(!t0){t0=ts} frames++; var dt=ts-t0; if(dt>=500){ var fps=Math.round(frames*1000/dt); el.textContent=fps; if(fps<30){d.classList.add('low')}else{d.classList.remove('low')} frames=0;t0=ts} requestAnimationFrame(tick)} requestAnimationFrame(tick); return true} setup(); })(); </script><script id="canvas_nest" defer="defer" color="115,162,250" opacity="0.95" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
